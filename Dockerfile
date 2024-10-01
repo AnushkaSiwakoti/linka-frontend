@@ -1,31 +1,29 @@
-# syntax=docker/dockerfile:1
+# Step 1: Build the React app
+FROM node:14 AS build
 
-ARG NODE_VERSION=20.11.1
+# Set working directory
+WORKDIR /app
 
-FROM node:${NODE_VERSION}-alpine
-
-# Use production node environment by default.
-ENV NODE_ENV local
-WORKDIR /usr/src/app
-
-# Copy package.json and package-lock.json into the image.
+# Copy package.json and package-lock.json
 COPY package*.json ./
 
-# # Clear npm cache
-# RUN npm cache clean --force
-
-# # Install dependencies using npm ci.
-#TODO RUN npm ci --omit=dev
+# Install dependencies
 RUN npm install
 
-# Copy the rest of your app's source code
+# Copy the rest of the app's source code
 COPY . .
 
-# Expose the port that the application listens on.
-EXPOSE 3000
+# Build the app for production
+RUN npm run build
 
-#TODO Run the application as a non-root user.
-# USER node
+# Step 2: Serve the React app with Nginx
+FROM nginx:alpine
 
-# Run the application.
-CMD npm run dev
+# Copy the build folder from the previous step to Nginx's html folder
+COPY --from=build /app/build /usr/share/nginx/html
+
+# Expose port 80
+EXPOSE 80
+
+# Start Nginx
+CMD ["nginx", "-g", "daemon off;"]
