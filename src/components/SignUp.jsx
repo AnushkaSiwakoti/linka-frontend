@@ -1,3 +1,7 @@
+<<<<<<< HEAD
+=======
+import './SignUp.css';
+>>>>>>> f8e256d (updated login and signup)
 import React, { useState } from 'react';
 import './SignUp.css';
 import axios from 'axios';
@@ -14,6 +18,7 @@ const SignUp = () => {
 
   const handleSubmit = async (event) => {
     event.preventDefault();
+<<<<<<< HEAD
     if (password !== confirmPassword) {
       alert("Passwords don't match!");
       return;
@@ -36,6 +41,36 @@ const SignUp = () => {
     } catch (error) {
       console.error('Error signing up:', error);
       alert("Error Signing Up!");
+=======
+    
+    // Simple password match validation
+    if (password !== confirmPassword) {
+      alert('Passwords do not match');
+      return;
+    }
+
+    try {
+      const response = await fetch('http://127.0.0.1:8000/create-account/', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          username: username,
+          email: email,
+          password: password,
+        }),
+      });
+
+      const data = await response.json();
+      if (response.ok) {
+        alert(data.message); 
+      } else {
+        alert(data.error);
+      }
+    } catch (error) {
+      alert('Error: ' + error.message);
+>>>>>>> f8e256d (updated login and signup)
     }
   };
 
@@ -93,4 +128,8 @@ const SignUp = () => {
   );
 };
 
+<<<<<<< HEAD
 export default SignUp;
+=======
+export default SignUp;
+>>>>>>> f8e256d (updated login and signup)
