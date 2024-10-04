@@ -1,7 +1,4 @@
-<<<<<<< HEAD
-=======
 import './SignUp.css';
->>>>>>> f8e256d (updated login and signup)
 import React, { useState } from 'react';
 import './SignUp.css';
 import axios from 'axios';
@@ -18,30 +15,6 @@ const SignUp = () => {
 
   const handleSubmit = async (event) => {
     event.preventDefault();
-<<<<<<< HEAD
-    if (password !== confirmPassword) {
-      alert("Passwords don't match!");
-      return;
-    }
-
-    const formData = {
-      username,
-      email,
-      password,
-    };
-
-    try {
-      const baseURL = ENV.API_BASE_URL_8000; // Update with your backend base URL
-      const response = await axios.post(`${baseURL}/create-account/create-account/`, formData);
-
-      if (response.status === 201) {
-        alert("Successfully signed up! You may now log in.");
-        navigate('/login'); // Redirect to login page after successful signup
-      }
-    } catch (error) {
-      console.error('Error signing up:', error);
-      alert("Error Signing Up!");
-=======
     
     // Simple password match validation
     if (password !== confirmPassword) {
@@ -50,7 +23,7 @@ const SignUp = () => {
     }
 
     try {
-      const response = await fetch('http://127.0.0.1:8000/create-account/', {
+      const response = await fetch('http://137.184.141.237/create-account/', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -70,7 +43,6 @@ const SignUp = () => {
       }
     } catch (error) {
       alert('Error: ' + error.message);
->>>>>>> f8e256d (updated login and signup)
     }
   };
 
@@ -128,8 +100,4 @@ const SignUp = () => {
   );
 };
 
-<<<<<<< HEAD
 export default SignUp;
-=======
-export default SignUp;
->>>>>>> f8e256d (updated login and signup)

@@ -10,28 +10,10 @@ const Login = () => {
 
   const handleSubmit = async (event) => {
     event.preventDefault();
-<<<<<<< HEAD
-    const formData = {
-      username,
-      password,
-    };
-
-    try {
-      const baseURL = ENV.API_BASE_URL_8000; // Update with your backend base URL
-      const response = await axios.post(`${baseURL}/verify-account/verify-account/`, formData);
-
-      if (response.status === 200) {
-        // Handle successful login (e.g., redirect to a different page, store user data, etc.)
-        alert("Login successful!");
-      }
-    } catch (error) {
-      console.error('Error logging in:', error);
-      alert("Login failed! Please check your credentials.");
-=======
     setError(null); // Reset error state before submission
 
     try {
-      const response = await fetch('http://127.0.0.1:8000/verify-account/', {
+      const response = await fetch('http://137.184.141.237//verify-account/', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -52,7 +34,6 @@ const Login = () => {
       }
     } catch (error) {
       setError('Something went wrong. Please try again later.');
->>>>>>> f8e256d (updated login and signup)
     }
   };
 
