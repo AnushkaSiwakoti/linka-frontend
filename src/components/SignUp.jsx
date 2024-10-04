@@ -23,7 +23,7 @@ const SignUp = () => {
     }
 
     try {
-      const response = await fetch('http://137.184.141.237/create-account/', {
+      const response = await fetch('http://137.184.141.237:8000/create-account/', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

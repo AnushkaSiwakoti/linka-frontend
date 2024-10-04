@@ -13,7 +13,7 @@ const Login = () => {
     setError(null); // Reset error state before submission
 
     try {
-      const response = await fetch('http://137.184.141.237//verify-account/', {
+      const response = await fetch('http://137.184.141.237:8000/verify-account/', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
