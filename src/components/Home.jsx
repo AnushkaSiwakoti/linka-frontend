@@ -3,7 +3,7 @@ import React from 'react';
 function Home() {
   return (
     <div style={styles.container}>
-      <h2 style={styles.title}>Welcome to Linka(hehe)</h2>
+      <h2 style={styles.title}>Welcome to nushnush</h2>
     </div>
   );
 }
