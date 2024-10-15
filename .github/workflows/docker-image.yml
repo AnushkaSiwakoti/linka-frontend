@@ -12,6 +12,9 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+      
       - name: Deploy to server via SSH
         uses: appleboy/ssh-action@v0.1.9
         with:
@@ -27,8 +30,12 @@ jobs:
             # Navigate to the project directory
             cd ..
             
-            # Stop and remove existing containers
+            # Stop and remove existing containers (also removes networks)
             docker-compose down --remove-orphans
+            
+            # Prune unused networks and volumes (optional)
+            docker network prune -f
+            docker volume prune -f
             
             # Start containers with the updated image
             docker-compose up -d --build
