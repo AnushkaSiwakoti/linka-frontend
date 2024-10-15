@@ -1,0 +1,87 @@
+  
+.build-container {
+    max-width: 800px;
+    margin: 50px auto;
+    padding: 20px;
+    background-color: #000000;
+    color: #fff;
+    border-radius: 10px;
+    box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
+    text-align: center;
+  }
+  
+  /* Heading */
+  h1 {
+    font-size: 1.8rem;
+    margin-bottom: 20px;
+    color: rgb(149, 171, 211);
+  }
+  
+  /* Upload Section Styles */
+  .upload-section {
+    margin-top: 20px;
+  }
+  
+  .drop-zone {
+    border: 2px dashed #007bff;
+    padding: 40px;
+    background-color: rgb(0, 0, 0);
+    cursor: pointer;
+    color: rgb(149, 171, 211);
+    font-size: 1.2rem;
+    border-radius: 5px;
+  }
+  
+  .drop-zone:hover {
+    background-color: #000000;
+  }
+  
+  /* Remove button */
+  .remove-button {
+
+    width: 100%;
+    padding: 10px; /* Reduced padding for smaller buttons */
+    font-size: 14px; /* Smaller font size */        
+    background-color: #007bff;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    margin-top: 15px; /* Increase space above the button */
+    transition: background-color 0.3s ease;
+
+  }
+  
+  .remove-button:hover {
+    background-color: #007bff;
+  }
+  
+  /* File info display */
+  .file-info {
+    margin-top: 20px;
+  }
+  
+  .file-info h3 {
+    color: #007bff;
+    font-size: 1.2rem;
+  }
+  .upload-status {
+    margin-top: 15px;
+    font-size: 1.5rem;
+    padding: 10px;
+    border-radius: 5px;
+    text-align: center;
+    background-color: yellow;
+    color: black;
+  }
+  
+  .upload-status.success {
+    background-color: #d4edda;
+    color: #155724;
+  }
+  
+  .upload-status.error {
+    background-color: #f8d7da;
+    color: #721c24;
+  }
+  
