@@ -1,7 +1,5 @@
 import './Login.css';
 import React, { useState } from 'react';
-import axios from 'axios';
-import { ENV } from '../constants';
 
 const Login = () => {
   const [username, setUsername] = useState('');
@@ -10,7 +8,7 @@ const Login = () => {
 
   const handleSubmit = async (event) => {
     event.preventDefault();
-    setError(null); // Reset error state before submission
+    setError(null); // reset error state before submission
 
     try {
       const response = await fetch('http://137.184.141.237/api/verify-account/', {
@@ -28,7 +26,7 @@ const Login = () => {
 
       if (response.ok) {
         alert(data.message);
-        // You can redirect or do further processing here, like saving the token
+        // In the future, if need to, can redirect or do further processing here, like saving the token
       } else {
         setError(data.error);
       }

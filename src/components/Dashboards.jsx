@@ -1,4 +1,5 @@
 import React from 'react';
+import { Link } from 'react-router-dom'; 
 import './Dashboards.css';
 
 const Dashboards = () => {
@@ -7,8 +8,8 @@ const Dashboards = () => {
       <header className="header">
         <img src="logo.png" alt="Linka Logo" className="logo" />
         <nav className="nav">
-          <a href="./" className="nav-link">Home</a>
-          <a href="./build" className="nav-link">Build</a>
+          <Link to="/" className="nav-link">Home</Link>  {/* Use Link instead of a */}
+          <Link to="/build" className="nav-link">Build</Link>  {/* Use Link instead of a */}
         </nav>
       </header>
 
@@ -26,10 +27,10 @@ const Dashboards = () => {
               <h3 className="dashboard-name">Dashboard 2</h3>
               <p>Preview of the dashboard here</p>
             </div>
-            </div>
           </div>
         </div>
       </div>
+    </div>
   );
 };
 
