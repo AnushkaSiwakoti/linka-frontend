@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Link} from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import SignUp from './SignUp';
 import Login from './Login';
 import './Home.css';

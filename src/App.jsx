@@ -1,5 +1,5 @@
 import React from 'react';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { HashRouter as Router, Routes, Route } from 'react-router-dom';
 import Home from './components/Home';
 import Build from './components/Build';  // Import your Build component
 import Dashboards from './components/Dashboards';
@@ -16,4 +16,3 @@ function App() {
 }
 
 export default App;
-//test
