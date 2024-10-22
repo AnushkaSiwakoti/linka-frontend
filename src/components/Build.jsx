@@ -1,179 +1,93 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { Chart } from 'chart.js';
-import { Link } from 'react-router-dom'; 
-import Papa from 'papaparse'; 
+import React, { useState, useMemo } from 'react';
+import { useTable, useSortBy, useFilters, usePagination } from 'react-table';
+import Papa from 'papaparse';
+import { Link } from 'react-router-dom';
 import './Build.css';
 
 const Build = () => {
-  const [visualizations, setVisualizations] = useState([]);
   const [columns, setColumns] = useState([]);
-  const [sampleData, setSampleData] = useState([]);
-  const [dashboard, setDashboard] = useState([]);
-  const [sidebarVisible, setSidebarVisible] = useState(false);
-  const chartRefs = useRef([]);
-  const fileInput = useRef(null);
+  const [data, setData] = useState([]);
+  const [selectedFile, setSelectedFile] = useState(null); 
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+  const [isSidebarExpanded, setIsSidebarExpanded] = useState(true); // Sidebar toggle state
 
-  // Show sidebar if visualizations are available
-  useEffect(() => {
-    if (visualizations.length > 0) {
-      setSidebarVisible(true);
+// Handle CSV Parsing
+const fetchAndParseCsv = (csvData) => {
+  const parsedCsv = Papa.parse(csvData, { header: true });
+  const parsedColumns = Object.keys(parsedCsv.data[0]).map((col) => {
+    if (!col || col === 'Column 0') {
+      // Ensure the column order matches the original CSV file and avoid creating "Column 0"
+      return {
+        Header: col || 'Unknown',  // Prevent creating empty columns
+        accessor: col || 'Unknown',
+      };
     }
-  }, [visualizations]);
+    return {
+      Header: col,
+      accessor: col,
+    };
+  });
+  setColumns(parsedColumns);
+  setData(parsedCsv.data);
+};
 
-  const fetchAndParseCsv = (csvUrl) => {
-    fetch(csvUrl)
-      .then((response) => {
-        console.log("Fetching CSV file from URL:", csvUrl);
-        return response.text();
-      })
-      .then((csvText) => {
-        console.log("CSV Text received:", csvText);
-        // Parse CSV
-        const parsedCsv = Papa.parse(csvText, { header: true });
-        const parsedColumns = parsedCsv.meta.fields;
-        const parsedData = parsedCsv.data;
-  
-        console.log("Parsed Columns:", parsedColumns);
-        console.log("Parsed Data:", parsedData);
-  
-        // Set state with parsed columns and data
-        setColumns(parsedColumns);
-        setSampleData(parsedData);
-  
-        // Generate visualizations
-        const generatedVisualizations = parsedColumns.map((col) => {
-          const isNumeric = !isNaN(parsedData[0][col]);
-          return {
-            column: col,
-            suggested_visualizations: isNumeric ? ['BarChart', 'LineChart'] : ['Table'],
-          };
-        });
-  
-        setVisualizations(generatedVisualizations);
-      })
-      .catch((error) => console.error('Error fetching or parsing CSV:', error));
-  };
-  
+
+  // Handle File Selection
   const handleFileChange = (e) => {
-    if (e.target.files && e.target.files[0]) {
-      console.log("File selected:", e.target.files[0].name);
+    setSelectedFile(e.target.files[0]);
+  };
+
+  // Handle File Upload (Trigger Parsing)
+  const handleUpload = () => {
+    setError(null);
+    if (!selectedFile) {
+      setError('Please select a CSV file to upload.');
+      return;
     }
+    setLoading(true);
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const csvData = event.target.result;
+      fetchAndParseCsv(csvData);
+      setLoading(false);
+    };
+    reader.readAsText(selectedFile);
   };
 
-  const handleUploadClick = () => {
-    const formData = new FormData();
-    if (fileInput.current && fileInput.current.files[0]) {
-      formData.append('file', fileInput.current.files[0]);
-
-      fetch('http://127.0.0.1:8000/file/upload/', {
-        method: 'POST',
-        body: formData,
-      })
-        .then((response) => response.json())
-        .then((data) => {
-          if (data.status === 'success') {
-            console.log("Processing file from URL:", data.file_url);
-            fetchAndParseCsv(data.file_url);  // Fetch and parse the CSV file directly for visualization
-          } else {
-            console.error("Error from backend:", data.message);
-          }
-        })
-        .catch((error) => {
-          console.error('Error during file upload:', error);
-        });
-    }
+  // Toggle sidebar visibility
+  const toggleSidebar = () => {
+    setIsSidebarExpanded(!isSidebarExpanded);
   };
 
-  const handleAddToDashboard = (viz) => {
-    setDashboard([...dashboard, viz]);
-  };
+  // Table columns and data setup for react-table
+  const tableColumns = useMemo(() => columns, [columns]);
+  const tableData = useMemo(() => data, [data]);
 
-  // Render the charts after the dashboard is updated
-  useEffect(() => {
-    dashboard.forEach((viz, idx) => {
-      const ctx = chartRefs.current[idx];
-      if (ctx && ctx.getContext) {
-        const context = ctx.getContext('2d');
-
-        if (viz.suggested_visualizations.includes('BarChart')) {
-          new Chart(context, {
-            type: 'bar',
-            data: {
-              labels: columns.length ? columns : [],
-              datasets: [
-                {
-                  label: viz.column,
-                  data: sampleData.map((row) => row[viz.column]),
-                  backgroundColor: 'rgba(75, 192, 192, 0.2)',
-                  borderColor: 'rgba(75, 192, 192, 1)',
-                  borderWidth: 1,
-                },
-              ],
-            },
-            options: {
-              scales: {
-                y: {
-                  beginAtZero: true,
-                },
-              },
-            },
-          });
-        } else if (viz.suggested_visualizations.includes('LineChart')) {
-          new Chart(context, {
-            type: 'line',
-            data: {
-              labels: columns.length ? columns : [],
-              datasets: [
-                {
-                  label: viz.column,
-                  data: sampleData.map((row) => row[viz.column]),
-                  backgroundColor: 'rgba(54, 162, 235, 0.2)',
-                  borderColor: 'rgba(54, 162, 235, 1)',
-                  borderWidth: 1,
-                },
-              ],
-            },
-            options: {
-              scales: {
-                y: {
-                  beginAtZero: true,
-                },
-              },
-            },
-          });
-        }
-      }
-    });
-  }, [dashboard, columns, sampleData]);
-
-  const renderVisualization = (viz, idx) => {
-    if (viz.suggested_visualizations.includes('Table')) {
-      return (
-        <div className="dashboard-table">
-          <h3>{viz.column}</h3>
-          <table className="data-table">
-            <thead>
-              <tr>{columns.length ? columns.map((col, colIdx) => <th key={colIdx}>{col}</th>) : null}</tr>
-            </thead>
-            <tbody>
-              {sampleData.length ? sampleData.map((row, rowIndex) => (
-                <tr key={rowIndex}>
-                  {columns.length ? columns.map((col, colIndex) => (
-                    <td key={colIndex}>{row[col]}</td>
-                  )) : null}
-                </tr>
-              )) : null}
-            </tbody>
-          </table>
-        </div>
-      );
-    } else if (viz.suggested_visualizations.includes('BarChart')) {
-      return <canvas id={`bar-chart-${viz.column}`} ref={(el) => (chartRefs.current[idx] = el)}></canvas>;
-    } else if (viz.suggested_visualizations.includes('LineChart')) {
-      return <canvas id={`line-chart-${viz.column}`} ref={(el) => (chartRefs.current[idx] = el)}></canvas>;
-    }
-    return null;
-  };
+  // Use the useTable hook to create a table instance with sorting and filtering
+  const {
+    getTableProps,
+    getTableBodyProps,
+    headerGroups,
+    prepareRow,
+    page,
+    canPreviousPage,
+    canNextPage,
+    pageOptions,
+    nextPage,
+    previousPage,
+    setPageSize,
+    state: { pageIndex, pageSize },
+  } = useTable(
+    {
+      columns: tableColumns,
+      data: tableData,
+    },
+    useFilters,
+    useSortBy,
+    usePagination
+  );
 
   return (
     <div className="build-page">
@@ -186,71 +100,111 @@ const Build = () => {
         </nav>
       </header>
 
-      <div className="main-content">
-        <div className="build-container">
-          <h1>Upload Your CSV File</h1>
-          <div className="upload-section">
-            <input 
-              type="file" 
-              ref={fileInput} 
-              onChange={handleFileChange} 
-              accept=".csv"
-              className="file-input"
-            />
-          </div>
+      <div className="upload-container">
+        <h1>Upload Your CSV File</h1>
 
-          <button onClick={handleUploadClick} className="upload-button">
+        {/* File Input Section */}
+        <input type="file" onChange={handleFileChange} accept=".csv" className="file-input" />
+        <div className="upload-btn-container">
+          <button onClick={handleUpload} disabled={!selectedFile} className="upload-btn">
             Upload File
           </button>
+        </div>
 
-          {/* Sample Data Section */}
-          {sampleData.length > 0 && (
-            <div className="sample-data-section">
-              <h2>Sample Data Preview</h2>
-              <table className="sample-data-table">
-                <thead>
-                  <tr>{columns.length ? columns.map((col, idx) => <th key={idx}>{col}</th>) : null}</tr>
-                </thead>
-                <tbody>
-                  {sampleData.length ? sampleData.map((row, rowIndex) => (
-                    <tr key={rowIndex}>
-                      {columns.length ? columns.map((col, colIndex) => (
-                        <td key={colIndex}>{row[col]}</td>
-                      )) : null}
-                    </tr>
-                  )) : null}
-                </tbody>
-              </table>
-            </div>
-          )}
+        {error && <div className="error-message">{error}</div>}
+        {loading && <div className="loading-message">Loading...</div>}
+      </div>
 
-          {/* Dashboard Layout */}
-          <div className="dashboard-layout">
-            {dashboard.map((viz, idx) => (
-              <div key={idx} className="dashboard-item">
-                {renderVisualization(viz, idx)}
-              </div>
-            ))}
+      <div className="build-content">
+        {/* Sidebar Section */}
+        <div className={`sidebar ${isSidebarExpanded ? 'expanded' : 'collapsed'}`}>
+          <button className="toggle-btn" onClick={toggleSidebar}>
+            {isSidebarExpanded ? '⬅' : '➡'}
+          </button>
+          <div className="sidebar-content">
+            <button className="icon">
+              📊 <span>{isSidebarExpanded && 'Table'}</span>
+            </button>
+            <button className="icon">
+              📈 <span>{isSidebarExpanded && 'Bar Chart'}</span>
+            </button>
+            <button className="icon">
+              🥧 <span>{isSidebarExpanded && 'Pie Chart'}</span>
+            </button>
+            <button className="icon">
+              ⚫ <span>{isSidebarExpanded && 'Scatter Plot'}</span>
+            </button>
+            <button className="icon">
+              🧊 <span>{isSidebarExpanded && 'Bubble Chart'}</span>
+            </button>
           </div>
         </div>
 
-        {/* Sidebar */}
-        {sidebarVisible && (
-          <div className={`sidebar ${sidebarVisible ? 'visible' : 'hidden'}`}>
-            <h2>Visualization Tools</h2>
-            <ul className="tool-list">
-              {visualizations.length ? visualizations.map((viz, idx) => (
-                <li 
-                  key={idx} 
-                  className="tool-item" 
-                  onClick={() => handleAddToDashboard(viz)}
-                >
-                  <span className="tool-icon">📊</span> {viz.column} - {viz.suggested_visualizations.join(', ')}
-                </li>
-              )) : null}
-            </ul>
-          </div>
-        )}
+        {/* Main Content */}
+        <div className="main-container">
+          {columns.length > 0 && (
+            <>
+              {/* Table Section */}
+              <div className="table-section">
+                <h2>Data Table</h2>
+                <table {...getTableProps()} className="data-table">
+                  <thead>
+                    {headerGroups.map((headerGroup) => (
+                      <tr {...headerGroup.getHeaderGroupProps()}>
+                        {headerGroup.headers.map((column) => (
+                          <th {...column.getHeaderProps(column.getSortByToggleProps())}>
+                            {column.render('Header')}
+                            <span>
+                              {column.isSorted ? (column.isSortedDesc ? ' 🔽' : ' 🔼') : ''}
+                            </span>
+                          </th>
+                        ))}
+                      </tr>
+                    ))}
+                  </thead>
+                  <tbody {...getTableBodyProps()}>
+                    {page.map((row) => {
+                      prepareRow(row);
+                      return (
+                        <tr {...row.getRowProps()}>
+                          {row.cells.map((cell) => (
+                            <td {...cell.getCellProps()}>{cell.render('Cell')}</td>
+                          ))}
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+
+                {/* Pagination Controls */}
+                <div className="pagination-controls button">
+                  <button onClick={() => previousPage()} disabled={!canPreviousPage}>
+                    Previous
+                  </button>
+                  <button onClick={() => nextPage()} disabled={!canNextPage}>
+                    Next
+                  </button>
+                  <span>
+                    Page{' '}
+                    <strong>
+                      {pageIndex + 1} of {pageOptions.length}
+                    </strong>{' '}
+                  </span>
+                  <select
+                    value={pageSize}
+                    onChange={(e) => setPageSize(Number(e.target.value))}
+                  >
+                    {[10, 20, 30, 40, 50].map((size) => (
+                      <option key={size} value={size}>
+                        Show {size}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+            </>
+          )}
+        </div>
       </div>
     </div>
   );
