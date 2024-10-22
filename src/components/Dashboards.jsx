@@ -1,18 +1,12 @@
 import React from 'react';
 import { Link } from 'react-router-dom'; 
 import './Dashboards.css';
+import Navbar from './Navbar';
 
 const Dashboards = () => {
   return (
     <div className="dashboards-container">
-      <header className="header">
-        <img src="logo.png" alt="Linka Logo" className="logo" />
-        <nav className="nav">
-          <Link to="/" className="nav-link">Home</Link>  {/* Use Link instead of a */}
-          <Link to="/build" className="nav-link">Build</Link>  {/* Use Link instead of a */}
-        </nav>
-      </header>
-
+      <Navbar isLoggedIn={true} handleLogout={() => {}} />
       <div className="main-content">
         <div className="dashboard-section">
           <h1 className="section-title">My Dashboards</h1>

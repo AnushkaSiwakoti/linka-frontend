@@ -1,9 +1,9 @@
 import './SignUp.css';
 import React, { useState } from 'react';
-import './SignUp.css';
+import Navbar from './Navbar';
 
-const SignUp = () => {
 
+const SignUp = ({ onSuccess }) => {
   const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -11,7 +11,7 @@ const SignUp = () => {
 
   const handleSubmit = async (event) => {
     event.preventDefault();
-    
+
     // Simple password match validation
     if (password !== confirmPassword) {
       alert('Passwords do not match');
@@ -19,7 +19,7 @@ const SignUp = () => {
     }
 
     try {
-      const response = await fetch('http://137.184.141.237/api/create-account/', {
+      const response = await fetch(`${process.env.REACT_APP_API_BASE_URL}/create-account/`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -33,7 +33,12 @@ const SignUp = () => {
 
       const data = await response.json();
       if (response.ok) {
-        alert(data.message); 
+        alert(data.message);
+        // Set the user as logged in
+        localStorage.setItem('username', username);
+        if (onSuccess) {
+          onSuccess(); // Trigger onSuccess callback after successful signup
+        }
       } else {
         alert(data.error);
       }
@@ -90,7 +95,9 @@ const SignUp = () => {
             required
           />
         </div>
-        <button className='signup-button'>Sign Up</button>
+        <button type="submit" className="signup-button">
+          Sign Up
+        </button>
       </form>
     </div>
   );

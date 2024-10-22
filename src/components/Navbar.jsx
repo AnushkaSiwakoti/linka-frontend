@@ -1,51 +1,23 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
+import './Navbar.css';
 
-function Navbar() {
+const Navbar = ({ isLoggedIn, handleLogout }) => {
   return (
-    <nav style={styles.nav}>
-      <div>
-        <h1 style={styles.brand}>Linka</h1>
+    <nav className="nav">
+      <div className="nav-left">
+        <img src="logo.png" alt="Linka Logo" className="logo" />
+        <Link to="/" className="nav-link">Home</Link>
+        <Link to="/dashboards" className="nav-link">My Dashboards</Link>
+        <Link to="/build" className="nav-link">Build</Link>
       </div>
-      <div style={styles.navLinks}>
-        <Link to="/login" style={styles.link}>
-          <button style={styles.button}>Login</button>
-        </Link>
-        <Link to="/signup" style={styles.link}>
-          <button style={styles.button}>Sign Up</button>
-        </Link>
+      <div className="nav-right">
+        {isLoggedIn && (
+          <button className="logout-button" onClick={handleLogout}>Logout</button>
+        )}
       </div>
     </nav>
   );
-}
-
-const styles = {
-  nav: {
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    backgroundColor: '#333',
-    color: '#fff',
-    padding: '1rem',
-  },
-  brand: {
-    margin: 0,
-  },
-  navLinks: {
-    display: 'flex',
-    gap: '1rem',
-  },
-  button: {
-    padding: '0.5rem 1rem',
-    border: 'none',
-    backgroundColor: '#fff',
-    color: '#333',
-    cursor: 'pointer',
-    borderRadius: '5px',
-  },
-  link: {
-    textDecoration: 'none',
-  },
 };
 
 export default Navbar;
