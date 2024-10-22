@@ -3,6 +3,7 @@ import { useTable, useSortBy, useFilters, usePagination } from 'react-table';
 import Papa from 'papaparse';
 import { Link } from 'react-router-dom';
 import './Build.css';
+import Navbar from './Navbar';
 
 const Build = () => {
   const [columns, setColumns] = useState([]);
@@ -92,12 +93,7 @@ const fetchAndParseCsv = (csvData) => {
   return (
     <div className="build-page">
       <header className="header">
-        <img src="logo.png" alt="Linka Logo" className="logo" />
-        <nav className="nav">
-          <Link to="/" className="nav-link">Home</Link>
-          <Link to="/dashboards" className="nav-link">My Dashboards</Link>
-          <Link to="/build" className="nav-link">Build</Link>
-        </nav>
+        <Navbar isLoggedIn={true} handleLogout={() => {}} />
       </header>
 
       <div className="upload-container">
