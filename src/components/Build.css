@@ -1,10 +1,17 @@
 /* General Page Styling */
+body {
+  font-family: Arial, sans-serif;
+  background-color: #000;
+  color: #fff;
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
 .build-page {
   display: flex;
   flex-direction: column;
   min-height: 100vh;
-  background-color: #000;
-  color: #fff;
   padding: 0 50px;
 }
 
@@ -14,9 +21,8 @@
   justify-content: space-between;
   align-items: center;
   padding: 10px 20px;
-  border-bottom: 2px solid #ffffff;
+  background-color: #000;
 }
-
 
 .logo {
   height: 50px;
@@ -62,6 +68,7 @@
   min-width: 150px;
   max-width: 250px;
   text-align: center;
+  transition: background-color 0.3s ease;
 }
 
 .upload-btn:hover {
@@ -70,10 +77,10 @@
 
 /* Sidebar Styling */
 .sidebar {
-  position: fixed; /* Fixed sidebar so it stays relative to the screen */
-  top: 70px; /* Sidebar starts below the header */
+  position: fixed;
+  top: 70px;
   left: 0;
-  height: calc(100vh - 70px); /* Sidebar takes full screen height minus header */
+  height: calc(100vh - 70px);
   background-color: #1a1a1a;
   transition: width 0.3s ease;
   display: flex;
@@ -87,19 +94,34 @@
   z-index: 1000;
 }
 
-.sidebar.expanded {
+.sidebar-expanded {
   width: 250px;
 }
 
-.sidebar.collapsed {
+.sidebar-collapsed {
   width: 100px;
 }
 
-.sidebar.collapsed .icon {
+.sidebar-collapsed .icon {
   justify-content: center;
 }
 
-.sidebar button {
+.toggle-btn {
+  background-color: #333;
+  color: #fff;
+  border: none;
+  width: 100%;
+  padding: 10px;
+  cursor: pointer;
+  font-size: 18px;
+  transition: background-color 0.3s ease;
+}
+
+.toggle-btn:hover {
+  background-color: #3b536d;
+}
+
+.sidebar-button {
   display: flex;
   align-items: center;
   justify-content: center;
@@ -113,54 +135,49 @@
   transition: background-color 0.3s ease;
 }
 
-.sidebar button:hover {
-  background-color: #333;
+.sidebar-button:hover {
+  background-color: #3b536d;
 }
 
-.sidebar .icon {
+.icon {
   font-size: 2rem;
   color: #fff;
 }
 
-.sidebar button span {
+.sidebar-button span {
   display: none;
   margin-left: 10px;
 }
 
-.sidebar.expanded button span {
+.sidebar-expanded .sidebar-button span {
   display: inline;
 }
 
 /* Main Content Styling */
 .main-container {
-  margin-left: 100px; /* Adjust margin to accommodate collapsed sidebar */
+  margin-left: 100px;
   padding: 40px;
-  background-color: #222;
+  background-color: #1a1a1a;
   border-radius: 10px;
-  max-width: 1000px;
+  max-width: 1200px;
   margin: 40px auto;
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.5);
+  transition: margin-left 0.3s ease;
 }
 
-.sidebar.expanded ~ .main-container {
-  margin-left: 250px; /* Adjust margin when sidebar is expanded */
-}
-
-/* Table Styling */
-.table-section {
-  max-width: 100%;
-  overflow-x: auto; /* Allow table to scroll horizontally if needed */
+.sidebar-expanded ~ .main-container {
+  margin-left: 250px;
 }
 
 /* Table Styling */
 .table-section {
   max-width: 100%;
-  overflow-x: auto; /* Allow table to scroll horizontally if needed */
+  overflow-x: auto;
 }
 
 .data-table {
   width: 100%;
-  table-layout: auto; /* Change from fixed to auto for flexible column width */
+  table-layout: auto;
   background-color: #000;
   border-collapse: collapse;
 }
@@ -170,7 +187,7 @@
   border: 1px solid #fff;
   text-align: left;
   color: #fff;
-  min-width: 150px; /* Minimum width for columns to be wider */
+  min-width: 150px;
 }
 
 .data-table th {
@@ -189,29 +206,88 @@
   margin: 20px 0;
 }
 
-.pagination-controls button {
-  background-color: #274463;
+.pagination-button {
+  background-color: #4d7fb4;
   color: white;
   padding: 10px;
   border-radius: 5px;
   cursor: pointer;
   border: none;
+  transition: background-color 0.3s ease;
 }
 
-.pagination-controls select {
+.pagination-button:hover {
+  background-color: #1a2e3b;
+}
+
+.pagination-select {
   padding: 5px;
 }
 
-.pagination-controls span {
+.pagination-span {
   margin: 0 10px;
 }
 
 /* Error and Loading Styling */
 .error-message {
-  color: red;
+  color: #e74c3c;
+  font-weight: bold;
+  margin-top: 10px;
 }
 
 .loading-message {
-  color: white;
+  color: #3498db;
+  font-weight: bold;
   text-align: center;
+  margin-top: 10px;
+}
+
+/* Chart Box Styling */
+.charts-grid {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-around;
+  align-items: flex-start;
+}
+
+.chart-box {
+  flex: 1 1 calc(50% - 32px);
+  margin: 16px;
+  background-color: #333;
+  padding: 20px;
+  border-radius: 10px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.5);
+}
+
+.chart-box-title {
+  color: #fff;
+  text-align: center;
+  margin-bottom: 20px;
+}
+
+@media (max-width: 768px) {
+  .chart-box {
+    flex: 1 1 100%;
+  }
+}
+
+@media (max-width: 768px) {
+  .sidebar {
+    width: 60px;
+  }
+  .sidebar-expanded {
+    width: 180px;
+  }
+  .sidebar-button span {
+    display: none;
+  }
+  .sidebar-expanded .sidebar-button span {
+    display: inline;
+  }
+  .main-container {
+    margin-left: 60px;
+  }
+  .sidebar-expanded ~ .main-container {
+    margin-left: 180px;
+  }
 }

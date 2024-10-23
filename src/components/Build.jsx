@@ -1,203 +1,305 @@
-import React, { useState, useMemo } from 'react';
-import { useTable, useSortBy, useFilters, usePagination } from 'react-table';
-import Papa from 'papaparse';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import Papa from 'papaparse';
+import { Bar } from 'react-chartjs-2';
+import { Chart as ChartJS, CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend } from 'chart.js';
 import './Build.css';
-import Navbar from './Navbar';
+
+ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend);
 
 const Build = () => {
+  const [isSidebarExpanded, setIsSidebarExpanded] = useState(true);
+  const [selectedFile, setSelectedFile] = useState(null);
+  const [error, setError] = useState(null);
+  const [loading, setLoading] = useState(false);
   const [columns, setColumns] = useState([]);
   const [data, setData] = useState([]);
-  const [selectedFile, setSelectedFile] = useState(null); 
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
-  const [isSidebarExpanded, setIsSidebarExpanded] = useState(true); // Sidebar toggle state
+  const [showBarChart, setShowBarChart] = useState(false);
+  const [activeChart, setActiveChart] = useState(null);
+  const [pageSize, setPageSize] = useState(10);
+  const [pageIndex, setPageIndex] = useState(0);
+  const [classification, setClassification] = useState({ numericalColumns: [], categoricalColumns: [] });
+  const [barChartSize, setBarChartSize] = useState({ width: '50%', height: '300px' });
 
-// Handle CSV Parsing
-const fetchAndParseCsv = (csvData) => {
-  const parsedCsv = Papa.parse(csvData, { header: true });
-  const parsedColumns = Object.keys(parsedCsv.data[0]).map((col) => {
-    if (!col || col === 'Column 0') {
-      // Ensure the column order matches the original CSV file and avoid creating "Column 0"
-      return {
-        Header: col || 'Unknown',  // Prevent creating empty columns
-        accessor: col || 'Unknown',
-      };
+  useEffect(() => {
+    if (columns.length > 0) {
+      classifyColumns();
     }
-    return {
-      Header: col,
-      accessor: col,
-    };
-  });
-  setColumns(parsedColumns);
-  setData(parsedCsv.data);
-};
+  }, [columns]);
 
-
-  // Handle File Selection
-  const handleFileChange = (e) => {
-    setSelectedFile(e.target.files[0]);
-  };
-
-  // Handle File Upload (Trigger Parsing)
-  const handleUpload = () => {
-    setError(null);
-    if (!selectedFile) {
-      setError('Please select a CSV file to upload.');
-      return;
-    }
-    setLoading(true);
-
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      const csvData = event.target.result;
-      fetchAndParseCsv(csvData);
-      setLoading(false);
-    };
-    reader.readAsText(selectedFile);
-  };
-
-  // Toggle sidebar visibility
   const toggleSidebar = () => {
     setIsSidebarExpanded(!isSidebarExpanded);
   };
 
-  // Table columns and data setup for react-table
-  const tableColumns = useMemo(() => columns, [columns]);
-  const tableData = useMemo(() => data, [data]);
+  const handleFileChange = (e) => {
+    setSelectedFile(e.target.files[0]);
+    setError(null);
+  };
 
-  // Use the useTable hook to create a table instance with sorting and filtering
-  const {
-    getTableProps,
-    getTableBodyProps,
-    headerGroups,
-    prepareRow,
-    page,
-    canPreviousPage,
-    canNextPage,
-    pageOptions,
-    nextPage,
-    previousPage,
-    setPageSize,
-    state: { pageIndex, pageSize },
-  } = useTable(
-    {
-      columns: tableColumns,
-      data: tableData,
+  const parseCSV = (file) => {
+    setLoading(true);
+    Papa.parse(file, {
+      header: true,
+      skipEmptyLines: true,
+      complete: handleParseComplete,
+      error: handleParseError,
+    });
+  };
+
+  const handleParseComplete = (result) => {
+    setLoading(false);
+    if (result.errors.length) {
+      setError('Error parsing CSV file. Please check the file format.');
+      return;
+    }
+    const parsedData = result.data;
+    if (parsedData.length > 0) {
+      const columnHeaders = Object.keys(parsedData[0]);
+      setColumns(columnHeaders);
+      setData(parsedData);
+    } else {
+      setError('No data found in the uploaded CSV file.');
+    }
+  };
+
+  const handleParseError = (error) => {
+    setLoading(false);
+    setError('Error reading file: ' + error.message);
+  };
+
+  const handleUpload = () => {
+    if (!selectedFile) {
+      setError('Please select a file to upload.');
+      return;
+    }
+    parseCSV(selectedFile);
+  };
+
+  const handleShowBarChart = (chartType) => {
+    setShowBarChart(true);
+    setActiveChart(chartType);
+  };
+
+  const handleNewFileUpload = () => {
+    setSelectedFile(null);
+    setColumns([]);
+    setData([]);
+    setShowBarChart(false);
+    setError(null);
+    setActiveChart(null);
+  };
+
+  const classifyColumns = () => {
+    const numericalColumns = columns.filter((column) => {
+      return data.every((row) => !isNaN(parseFloat(row[column])));
+    });
+    const categoricalColumns = columns.filter((column) => !numericalColumns.includes(column));
+    setClassification({ numericalColumns, categoricalColumns });
+  };
+
+  const { numericalColumns, categoricalColumns } = classification;
+
+  const barChartData = activeChart && numericalColumns.includes(activeChart) ? {
+    labels: data.map((row) => row[categoricalColumns[0]] || 'Unknown'),
+    datasets: [
+      {
+        label: activeChart,
+        data: data.map((row) => parseFloat(row[activeChart]) || 0),
+        backgroundColor: 'rgba(75,192,192,0.4)',
+        borderColor: 'rgba(75,192,192,1)',
+        borderWidth: 1,
+      },
+    ],
+  } : null;
+
+  const barChartOptions = {
+    maintainAspectRatio: false,
+    responsive: true,
+    plugins: {
+      legend: {
+        position: 'top',
+      },
+      title: {
+        display: true,
+        text: activeChart ? `${activeChart} Chart` : '',
+      },
     },
-    useFilters,
-    useSortBy,
-    usePagination
-  );
+  };
+
+  const handleNextPage = () => {
+    setPageIndex((prev) => Math.min(prev + 1, Math.floor(data.length / pageSize)));
+  };
+
+  const handlePreviousPage = () => {
+    setPageIndex((prev) => Math.max(prev - 1, 0));
+  };
+
+  const currentPageData = data.slice(pageIndex * pageSize, (pageIndex + 1) * pageSize);
+
+  const handleBarChartSizeChange = (e) => {
+    const { name, value } = e.target;
+    setBarChartSize((prevSize) => ({ ...prevSize, [name]: value }));
+  };
 
   return (
     <div className="build-page">
       <header className="header">
-        <Navbar isLoggedIn={true} handleLogout={() => {}} />
+        <img src="logo.png" alt="Linka Logo" className="logo" />
+        <nav className="nav">
+          <Link to="/" className="nav-link">Home</Link>
+          <Link to="/dashboards" className="nav-link">My Dashboards</Link>
+          <Link to="/build" className="nav-link">Build</Link>
+        </nav>
       </header>
-
-      <div className="upload-container">
-        <h1>Upload Your CSV File</h1>
-
-        {/* File Input Section */}
-        <input type="file" onChange={handleFileChange} accept=".csv" className="file-input" />
-        <div className="upload-btn-container">
-          <button onClick={handleUpload} disabled={!selectedFile} className="upload-btn">
-            Upload File
-          </button>
-        </div>
-
-        {error && <div className="error-message">{error}</div>}
-        {loading && <div className="loading-message">Loading...</div>}
-      </div>
 
       <div className="build-content">
         {/* Sidebar Section */}
-        <div className={`sidebar ${isSidebarExpanded ? 'expanded' : 'collapsed'}`}>
-          <button className="toggle-btn" onClick={toggleSidebar}>
-            {isSidebarExpanded ? '⬅' : '➡'}
-          </button>
+        <div className={`sidebar ${isSidebarExpanded ? 'expanded' : 'collapsed'}`} style={{ marginRight: '50px' }}>
+          <button className="toggle-btn" onClick={toggleSidebar}>{isSidebarExpanded ? '⬅' : '➡'}</button>
           <div className="sidebar-content">
-            <button className="icon">
-              📊 <span>{isSidebarExpanded && 'Table'}</span>
+            <button className="sidebar-button" onClick={handleNewFileUpload}>
+              🔄 <span className="sidebar-label">{isSidebarExpanded && 'Upload New File - Upload a different CSV file'}</span>
             </button>
-            <button className="icon">
-              📈 <span>{isSidebarExpanded && 'Bar Chart'}</span>
-            </button>
-            <button className="icon">
-              🥧 <span>{isSidebarExpanded && 'Pie Chart'}</span>
-            </button>
-            <button className="icon">
-              ⚫ <span>{isSidebarExpanded && 'Scatter Plot'}</span>
-            </button>
-            <button className="icon">
-              🧊 <span>{isSidebarExpanded && 'Bubble Chart'}</span>
-            </button>
+            {numericalColumns.map((column) => (
+              <button key={column} className="sidebar-button" onClick={() => handleShowBarChart(column)}>📊 <span className="sidebar-label">{isSidebarExpanded && `${column} Bar Chart - Visualize ${column} data distribution`}</span></button>
+            ))}
+            {categoricalColumns.length > 0 && (
+              <button className="sidebar-button" disabled>🥧 <span className="sidebar-label">{isSidebarExpanded && 'Pie Chart (Coming Soon) - Visualize categorical data'}</span></button>
+            )}
+            <button className="sidebar-button" disabled>📉 <span className="sidebar-label">{isSidebarExpanded && 'Metrics (Coming Soon) - Analyze key metrics'}</span></button>
           </div>
         </div>
 
         {/* Main Content */}
-        <div className="main-container">
-          {columns.length > 0 && (
+        <div className="main-container" style={{ marginLeft: '60px' }}>
+          {!showBarChart ? (
             <>
-              {/* Table Section */}
-              <div className="table-section">
-                <h2>Data Table</h2>
-                <table {...getTableProps()} className="data-table">
-                  <thead>
-                    {headerGroups.map((headerGroup) => (
-                      <tr {...headerGroup.getHeaderGroupProps()}>
-                        {headerGroup.headers.map((column) => (
-                          <th {...column.getHeaderProps(column.getSortByToggleProps())}>
-                            {column.render('Header')}
-                            <span>
-                              {column.isSorted ? (column.isSortedDesc ? ' 🔽' : ' 🔼') : ''}
-                            </span>
-                          </th>
+              <div className="upload-container">
+                <h1>Upload Your CSV File</h1>
+                <input type="file" onChange={handleFileChange} accept=".csv" className="file-input" />
+                <div className="upload-btn-container">
+                  <button onClick={handleUpload} disabled={!selectedFile} className="upload-btn">
+                    Upload File
+                  </button>
+                </div>
+                {error && <div className="error-message">{error}</div>}
+                {loading && <div className="loading-message">Loading...</div>}
+              </div>
+              {columns.length > 0 && (
+                <div className="table-section" style={{ marginTop: '80px', marginBottom: '80px' }}>
+                  <table className="data-table">
+                    <thead>
+                      <tr>
+                        {columns.map((column, index) => (
+                          <th key={index}>{column}</th>
                         ))}
                       </tr>
-                    ))}
-                  </thead>
-                  <tbody {...getTableBodyProps()}>
-                    {page.map((row) => {
-                      prepareRow(row);
-                      return (
-                        <tr {...row.getRowProps()}>
-                          {row.cells.map((cell) => (
-                            <td {...cell.getCellProps()}>{cell.render('Cell')}</td>
+                    </thead>
+                    <tbody>
+                      {currentPageData.map((row, rowIndex) => (
+                        <tr key={rowIndex}>
+                          {columns.map((column, colIndex) => (
+                            <td key={colIndex}>{row[column]}</td>
                           ))}
                         </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-
-                {/* Pagination Controls */}
-                <div className="pagination-controls button">
-                  <button onClick={() => previousPage()} disabled={!canPreviousPage}>
-                    Previous
-                  </button>
-                  <button onClick={() => nextPage()} disabled={!canNextPage}>
-                    Next
-                  </button>
-                  <span>
-                    Page{' '}
-                    <strong>
-                      {pageIndex + 1} of {pageOptions.length}
-                    </strong>{' '}
-                  </span>
-                  <select
-                    value={pageSize}
-                    onChange={(e) => setPageSize(Number(e.target.value))}
-                  >
-                    {[10, 20, 30, 40, 50].map((size) => (
-                      <option key={size} value={size}>
-                        Show {size}
-                      </option>
-                    ))}
-                  </select>
+                      ))}
+                    </tbody>
+                  </table>
+                  <div className="pagination-controls" style={{ marginTop: '40px' }}>
+                    <button onClick={handlePreviousPage} disabled={pageIndex === 0} className="pagination-button">
+                      Previous
+                    </button>
+                    <span className="pagination-span">
+                      Page {pageIndex + 1} of {Math.ceil(data.length / pageSize)}
+                    </span>
+                    <button onClick={handleNextPage} disabled={(pageIndex + 1) * pageSize >= data.length} className="pagination-button">
+                      Next
+                    </button>
+                    <select
+                      value={pageSize}
+                      onChange={(e) => setPageSize(Number(e.target.value))}
+                      className="pagination-select"
+                    >
+                      {[10, 20, 30, 40, 50].map((size) => (
+                        <option key={size} value={size}>
+                          Show {size}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+              )}
+            </>
+          ) : (
+            <>
+              <div className="chart-box-small" style={{ width: barChartSize.width, height: barChartSize.height, margin: '80px auto 80px 60px' }}>
+                <h2 className="chart-box-title">{activeChart} Bar Chart</h2>
+                {activeChart && barChartData && <Bar data={barChartData} options={barChartOptions} />}
+                <div className="chart-size-controls" style={{ marginTop: '40px' }}>
+                  <label>
+                    Width:
+                    <input
+                      type="text"
+                      name="width"
+                      value={barChartSize.width}
+                      onChange={handleBarChartSizeChange}
+                    />
+                  </label>
+                  <label>
+                    Height:
+                    <input
+                      type="text"
+                      name="height"
+                      value={barChartSize.height}
+                      onChange={handleBarChartSizeChange}
+                    />
+                  </label>
                 </div>
               </div>
+              {columns.length > 0 && (
+                <div className="table-section" style={{ marginTop: '80px', marginBottom: '80px' }}>
+                  <table className="data-table">
+                    <thead>
+                      <tr>
+                        {columns.map((column, index) => (
+                          <th key={index}>{column}</th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {currentPageData.map((row, rowIndex) => (
+                        <tr key={rowIndex}>
+                          {columns.map((column, colIndex) => (
+                            <td key={colIndex}>{row[column]}</td>
+                          ))}
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                  <div className="pagination-controls" style={{ marginTop: '40px' }}>
+                    <button onClick={handlePreviousPage} disabled={pageIndex === 0} className="pagination-button">
+                      Previous
+                    </button>
+                    <span className="pagination-span">
+                      Page {pageIndex + 1} of {Math.ceil(data.length / pageSize)}
+                    </span>
+                    <button onClick={handleNextPage} disabled={(pageIndex + 1) * pageSize >= data.length} className="pagination-button">
+                      Next
+                    </button>
+                    <select
+                      value={pageSize}
+                      onChange={(e) => setPageSize(Number(e.target.value))}
+                      className="pagination-select"
+                    >
+                      {[10, 20, 30, 40, 50].map((size) => (
+                        <option key={size} value={size}>
+                          Show {size}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+              )}
             </>
           )}
         </div>
