@@ -1,60 +1,154 @@
-/* General Page Styling */
-body {
-  font-family: Arial, sans-serif;
-  background-color: #000;
-  color: #fff;
+/* General Styling */
+body, html {
   margin: 0;
   padding: 0;
-  box-sizing: border-box;
+  font-family: Arial, sans-serif;
+  height: 100%;
+  background-color: #000;
+  color: #fff;
 }
 
 .build-page {
   display: flex;
   flex-direction: column;
   min-height: 100vh;
+  background-color: #000;
+  color: #fff;
   padding: 0 50px;
 }
 
-/* Header and navigation styles */
-.header {
+/* Navbar Styling */
+.navbar {
+  height: 60px;
+  background-color: #333;
+  color: white;
   display: flex;
-  justify-content: space-between;
   align-items: center;
-  padding: 10px 20px;
-  background-color: #000;
+  padding: 0 20px;
+  border-bottom: 2px solid #ffffff;
 }
 
-.logo {
-  height: 50px;
-}
-
-.nav {
-  display: flex;
-  gap: 15px;
-}
-
-.nav-link {
+/* Sidebar Styling */
+.sidebar {
+  position: fixed;
+  top: 60px;
+  left: 0;
+  bottom: 0;
+  width: 250px;
+  background-color: #1a1a1a;
   color: #fff;
-  text-decoration: none;
-  font-weight: normal;
-  font-size: 1rem;
+  border-right: 2px solid #007bff;
+  padding: 15px;
+  box-sizing: border-box;
+  transition: width 0.3s;
+  font-size: 14px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  overflow-x: hidden;
+  box-shadow: 2px 0 5px rgba(0, 0, 0, 0.5);
+  z-index: 1000;
 }
 
-.nav-link:hover {
-  color: #f0f0f0;
+.sidebar.collapsed {
+  width: 50px;
 }
 
-/* Upload Section */
+.sidebar.expanded {
+  width: 250px;
+}
+
+.toggle-btn {
+  background: none;
+  border: none;
+  font-size: 20px;
+  cursor: pointer;
+  color: #fff;
+}
+
+.sidebar-content {
+  margin-top: 20px;
+}
+
+.sidebar-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: none;
+  font-size: 16px;
+  cursor: pointer;
+  margin-bottom: 10px;
+  color: #ffffff;
+  width: 100%;
+  padding: 10px;
+  transition: background-color 0.3s ease;
+}
+
+.sidebar-button:hover {
+  background-color: #333;
+}
+
+.sidebar-label {
+  margin-left: 10px;
+}
+
+.sidebar.collapsed .icon {
+  justify-content: center;
+}
+
+.sidebar .icon {
+  font-size: 2rem;
+  color: #fff;
+}
+
+.sidebar button span {
+  display: none;
+  margin-left: 10px;
+}
+
+.sidebar.expanded button span {
+  display: inline;
+}
+
+/* Main Content Styling */
+.main-container {
+  margin-left: 250px;
+  padding: 40px;
+  background-color: #222;
+  border-radius: 10px;
+  max-width: 1000px;
+  margin: 40px auto;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.5);
+  transition: margin-left 0.3s;
+}
+
+.main-container.sidebar-collapsed {
+  margin-left: 50px;
+}
+
+.sidebar.expanded ~ .main-container {
+  margin-left: 250px;
+}
+
+/* Upload Container Styling */
 .upload-container {
   display: flex;
-  justify-content: center;
-  align-items: center;
-  margin-top: 20px;
   flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: calc(100vh - 60px);
+  text-align: center;
+  background-color: #1a1a1a;
+  border: 2px solid #007bff;
+  border-radius: 8px;
+  padding: 40px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.5);
+  margin-top: 20px;
 }
 
 .upload-btn-container {
-  margin-top: 10px;
+  margin-top: 20px;
 }
 
 .upload-btn {
@@ -68,117 +162,45 @@ body {
   min-width: 150px;
   max-width: 250px;
   text-align: center;
-  transition: background-color 0.3s ease;
 }
 
 .upload-btn:hover {
   background-color: #0056b3;
 }
 
-/* Sidebar Styling */
-.sidebar {
-  position: fixed;
-  top: 70px;
-  left: 0;
-  height: calc(100vh - 70px);
-  background-color: #1a1a1a;
-  transition: width 0.3s ease;
-  display: flex;
-  font-size: 14px;
-  flex-direction: column;
-  align-items: center;
-  overflow-x: hidden;
-  padding: 20px 0;
-  box-shadow: 2px 0 5px rgba(0, 0, 0, 0.5);
-  width: 100px;
-  z-index: 1000;
+.file-input {
+  margin-top: 10px;
 }
 
-.sidebar-expanded {
-  width: 250px;
-}
-
-.sidebar-collapsed {
-  width: 100px;
-}
-
-.sidebar-collapsed .icon {
-  justify-content: center;
-}
-
-.toggle-btn {
-  background-color: #333;
-  color: #fff;
-  border: none;
+/* Chart and Table Container Styling */
+.chart-and-table-container {
+  position: relative;
   width: 100%;
-  padding: 10px;
-  cursor: pointer;
-  font-size: 18px;
-  transition: background-color 0.3s ease;
-}
-
-.toggle-btn:hover {
-  background-color: #3b536d;
-}
-
-.sidebar-button {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 100%;
-  padding: 10px;
-  background-color: transparent;
-  border: none;
-  color: #fff;
-  font-size: 1rem;
-  cursor: pointer;
-  transition: background-color 0.3s ease;
-}
-
-.sidebar-button:hover {
-  background-color: #3b536d;
-}
-
-.icon {
-  font-size: 2rem;
-  color: #fff;
-}
-
-.sidebar-button span {
-  display: none;
-  margin-left: 10px;
-}
-
-.sidebar-expanded .sidebar-button span {
-  display: inline;
-}
-
-/* Main Content Styling */
-.main-container {
-  margin-left: 100px;
-  padding: 40px;
+  padding: 20px;
+  box-sizing: border-box;
   background-color: #1a1a1a;
-  border-radius: 10px;
-  max-width: 1200px;
-  margin: 40px auto;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.5);
-  transition: margin-left 0.3s ease;
+  border-radius: 8px;
+  min-height: 1000px;
 }
 
-.sidebar-expanded ~ .main-container {
-  margin-left: 250px;
+.chart-and-table-container > .table-draggable,
+.chart-and-table-container > .chart-box-small {
+  width: 100%;
+  min-height: 600px;
+  resize: both;
+  overflow: visible;
 }
 
 /* Table Styling */
 .table-section {
-  max-width: 100%;
-  overflow-x: auto;
+  width: 100%;
+  overflow-x: hidden;
 }
 
 .data-table {
   width: 100%;
-  table-layout: auto;
-  background-color: #000;
+  table-layout: fixed;
+  background-color: #1a1a1a;
   border-collapse: collapse;
 }
 
@@ -198,96 +220,65 @@ body {
   background-color: #444;
 }
 
-/* Pagination Controls Styling */
+/* Pagination and Resize Controls */
 .pagination-controls {
   display: flex;
-  justify-content: space-between;
   align-items: center;
+  justify-content: space-between;
   margin: 20px 0;
 }
 
-.pagination-button {
-  background-color: #4d7fb4;
+.pagination-controls button {
+  background-color: #274463;
   color: white;
   padding: 10px;
   border-radius: 5px;
   cursor: pointer;
   border: none;
-  transition: background-color 0.3s ease;
 }
 
-.pagination-button:hover {
-  background-color: #1a2e3b;
-}
-
-.pagination-select {
+.pagination-controls select {
   padding: 5px;
 }
 
-.pagination-span {
+.pagination-controls span {
   margin: 0 10px;
+}
+
+/* Table Resize Controls */
+.table-resize-controls {
+  display: flex;
+  align-items: center;
+  margin-top: 10px;
+}
+
+.chart-box-title {
+  font-size: 18px;
+  margin-bottom: 10px;
+  color: #007bff;
+}
+
+/* Drag and Drop Styling */
+.draggable {
+  cursor: move;
+}
+
+/* Add New Charts and Tables Styling */
+.chart-and-table-container:empty::after {
+  content: 'Add charts and tables here';
+  display: block;
+  color: #aaa;
+  text-align: center;
+  font-size: 18px;
+  padding: 40px 0;
 }
 
 /* Error and Loading Styling */
 .error-message {
-  color: #e74c3c;
-  font-weight: bold;
-  margin-top: 10px;
+  color: red;
 }
 
 .loading-message {
-  color: #3498db;
-  font-weight: bold;
+  color: white;
   text-align: center;
-  margin-top: 10px;
-}
-
-/* Chart Box Styling */
-.charts-grid {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: space-around;
-  align-items: flex-start;
-}
-
-.chart-box {
-  flex: 1 1 calc(50% - 32px);
-  margin: 16px;
-  background-color: #333;
-  padding: 20px;
-  border-radius: 10px;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.5);
-}
-
-.chart-box-title {
-  color: #fff;
-  text-align: center;
-  margin-bottom: 20px;
-}
-
-@media (max-width: 768px) {
-  .chart-box {
-    flex: 1 1 100%;
-  }
-}
-
-@media (max-width: 768px) {
-  .sidebar {
-    width: 60px;
-  }
-  .sidebar-expanded {
-    width: 180px;
-  }
-  .sidebar-button span {
-    display: none;
-  }
-  .sidebar-expanded .sidebar-button span {
-    display: inline;
-  }
-  .main-container {
-    margin-left: 60px;
-  }
-  .sidebar-expanded ~ .main-container {
-    margin-left: 180px;
-  }
 }
