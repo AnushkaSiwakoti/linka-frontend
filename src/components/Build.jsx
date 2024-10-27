@@ -1,21 +1,24 @@
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import Draggable from 'react-draggable';
 import Papa from 'papaparse';
-import { Bar } from 'react-chartjs-2';
-import { Chart as ChartJS, CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend } from 'chart.js';
+import { Bar, Pie, Line } from 'react-chartjs-2';
+import { Chart as ChartJS, CategoryScale, LinearScale, BarElement, ArcElement, PointElement, LineElement, Title, Tooltip, Legend } from 'chart.js';
 import './Build.css';
+import Navbar from './Navbar';
 
-ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend);
+ChartJS.register(CategoryScale, LinearScale, BarElement, ArcElement, PointElement, LineElement, Title, Tooltip, Legend);
 
 const Build = () => {
   const [isSidebarExpanded, setIsSidebarExpanded] = useState(true);
   const [selectedFile, setSelectedFile] = useState(null);
+  const [fileUploaded, setFileUploaded] = useState(false);
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(false);
   const [columns, setColumns] = useState([]);
   const [data, setData] = useState([]);
-  const [showBarChart, setShowBarChart] = useState(false);
-  const [activeChart, setActiveChart] = useState(null);
+  const [charts, setCharts] = useState([]);
+  const [showTable, setShowTable] = useState(false);
+  const [tableSize, setTableSize] = useState({ width: '70%', height: '400px' });
   const [pageSize, setPageSize] = useState(10);
   const [pageIndex, setPageIndex] = useState(0);
   const [classification, setClassification] = useState({ numericalColumns: [], categoricalColumns: [] });
@@ -57,6 +60,7 @@ const Build = () => {
       const columnHeaders = Object.keys(parsedData[0]);
       setColumns(columnHeaders);
       setData(parsedData);
+      setFileUploaded(true);
     } else {
       setError('No data found in the uploaded CSV file.');
     }
@@ -76,17 +80,84 @@ const Build = () => {
   };
 
   const handleShowBarChart = (chartType) => {
-    setShowBarChart(true);
-    setActiveChart(chartType);
+    if (charts.some((chart) => chart.type === 'bar' && chart.chartType === chartType)) {
+      return;
+    }
+
+    const barChartData = {
+      labels: data.map((row) => row[classification.categoricalColumns[0]] || 'Unknown'),
+      datasets: [
+        {
+          label: chartType,
+          data: data.map((row) => parseFloat(row[chartType]) || 0),
+          backgroundColor: 'rgba(54, 162, 235, 0.8)',
+          borderColor: 'rgba(54, 162, 235, 1)',
+          borderWidth: 1,
+        },
+      ],
+    };
+    setCharts((prevCharts) => [...prevCharts, { type: 'bar', chartType, data: barChartData }]);
+  };
+
+  const handleShowPieChart = () => {
+    if (charts.some((chart) => chart.type === 'pie')) {
+      return;
+    }
+
+    const pieChartData = {
+      labels: Array.from(new Set(data.map((row) => row[classification.categoricalColumns[0]] || 'Unknown'))),
+      datasets: [
+        {
+          label: 'Pie Chart',
+          data: Array.from(new Set(data.map((row) => row[classification.categoricalColumns[0]] || 'Unknown'))).map((category) =>
+            data.filter((row) => (row[classification.categoricalColumns[0]] || 'Unknown') === category).length
+          ),
+          backgroundColor: ['rgba(255,99,132,0.6)', 'rgba(54,162,235,0.6)', 'rgba(255,206,86,0.6)', 'rgba(75,192,192,0.6)', 'rgba(153,102,255,0.6)', 'rgba(255,159,64,0.6)'],
+          borderColor: 'rgba(255,255,255,1)',
+          borderWidth: 1,
+        },
+      ],
+    };
+    setCharts((prevCharts) => [...prevCharts, { type: 'pie', chartType: 'Pie Chart', data: pieChartData }]);
+  };
+
+  const handleShowLineChart = (chartType) => {
+    if (charts.some((chart) => chart.type === 'line' && chart.chartType === chartType)) {
+      return;
+    }
+
+    const lineChartData = {
+      labels: data.map((row) => row[classification.categoricalColumns[0]] || 'Unknown'),
+      datasets: [
+        {
+          label: chartType,
+          data: data.map((row) => parseFloat(row[chartType]) || 0),
+          borderColor: 'rgba(75,192,192,1)',
+          borderWidth: 2,
+          fill: false,
+        },
+      ],
+    };
+    setCharts((prevCharts) => [...prevCharts, { type: 'line', chartType, data: lineChartData }]);
+  };
+
+  const handleShowTable = () => {
+    setShowTable(true);
+  };
+
+  const handleTableSizeChange = (e) => {
+    const { name, value } = e.target;
+    setTableSize((prevSize) => ({ ...prevSize, [name]: value }));
   };
 
   const handleNewFileUpload = () => {
     setSelectedFile(null);
     setColumns([]);
     setData([]);
-    setShowBarChart(false);
+    setCharts([]);
     setError(null);
-    setActiveChart(null);
+    setFileUploaded(false);
+    setShowTable(false);
   };
 
   const classifyColumns = () => {
@@ -95,35 +166,6 @@ const Build = () => {
     });
     const categoricalColumns = columns.filter((column) => !numericalColumns.includes(column));
     setClassification({ numericalColumns, categoricalColumns });
-  };
-
-  const { numericalColumns, categoricalColumns } = classification;
-
-  const barChartData = activeChart && numericalColumns.includes(activeChart) ? {
-    labels: data.map((row) => row[categoricalColumns[0]] || 'Unknown'),
-    datasets: [
-      {
-        label: activeChart,
-        data: data.map((row) => parseFloat(row[activeChart]) || 0),
-        backgroundColor: 'rgba(75,192,192,0.4)',
-        borderColor: 'rgba(75,192,192,1)',
-        borderWidth: 1,
-      },
-    ],
-  } : null;
-
-  const barChartOptions = {
-    maintainAspectRatio: false,
-    responsive: true,
-    plugins: {
-      legend: {
-        position: 'top',
-      },
-      title: {
-        display: true,
-        text: activeChart ? `${activeChart} Chart` : '',
-      },
-    },
   };
 
   const handleNextPage = () => {
@@ -136,21 +178,9 @@ const Build = () => {
 
   const currentPageData = data.slice(pageIndex * pageSize, (pageIndex + 1) * pageSize);
 
-  const handleBarChartSizeChange = (e) => {
-    const { name, value } = e.target;
-    setBarChartSize((prevSize) => ({ ...prevSize, [name]: value }));
-  };
-
   return (
     <div className="build-page">
-      <header className="header">
-        <img src="logo.png" alt="Linka Logo" className="logo" />
-        <nav className="nav">
-          <Link to="/" className="nav-link">Home</Link>
-          <Link to="/dashboards" className="nav-link">My Dashboards</Link>
-          <Link to="/build" className="nav-link">Build</Link>
-        </nav>
-      </header>
+      <Navbar isLoggedIn={true} handleLogout={() => {}} />
 
       <div className="build-content">
         {/* Sidebar Section */}
@@ -158,154 +188,133 @@ const Build = () => {
           <button className="toggle-btn" onClick={toggleSidebar}>{isSidebarExpanded ? '⬅' : '➡'}</button>
           <div className="sidebar-content">
             <button className="sidebar-button" onClick={handleNewFileUpload}>
-              🔄 <span className="sidebar-label">{isSidebarExpanded && 'Upload New File - Upload a different CSV file'}</span>
+              🔄 <span className="sidebar-label">{isSidebarExpanded && 'Upload New File'}</span>
             </button>
-            {numericalColumns.map((column) => (
-              <button key={column} className="sidebar-button" onClick={() => handleShowBarChart(column)}>📊 <span className="sidebar-label">{isSidebarExpanded && `${column} Bar Chart - Visualize ${column} data distribution`}</span></button>
+            <button className="sidebar-button" onClick={handleShowTable}>
+              📋 <span className="sidebar-label">{isSidebarExpanded && 'Show Table'}</span>
+            </button>
+            {classification.numericalColumns.map((column) => (
+              <React.Fragment key={column}>
+                <button className="sidebar-button" onClick={() => handleShowBarChart(column)}>📊 <span className="sidebar-label">{isSidebarExpanded && `${column} Bar Chart`}</span></button>
+                <button className="sidebar-button" onClick={() => handleShowLineChart(column)}>📈 <span className="sidebar-label">{isSidebarExpanded && `${column} Line Chart`}</span></button>
+              </React.Fragment>
             ))}
-            {categoricalColumns.length > 0 && (
-              <button className="sidebar-button" disabled>🥧 <span className="sidebar-label">{isSidebarExpanded && 'Pie Chart (Coming Soon) - Visualize categorical data'}</span></button>
+            {classification.categoricalColumns.length > 0 && (
+              <button className="sidebar-button" onClick={handleShowPieChart}>🥧 <span className="sidebar-label">{isSidebarExpanded && 'Pie Chart'}</span></button>
             )}
-            <button className="sidebar-button" disabled>📉 <span className="sidebar-label">{isSidebarExpanded && 'Metrics (Coming Soon) - Analyze key metrics'}</span></button>
+            <button className="sidebar-button" disabled>📉 <span className="sidebar-label">{isSidebarExpanded && 'Metrics (Coming Soon)'}</span></button>
           </div>
         </div>
 
         {/* Main Content */}
-        <div className="main-container" style={{ marginLeft: '60px' }}>
-          {!showBarChart ? (
-            <>
-              <div className="upload-container">
-                <h1>Upload Your CSV File</h1>
-                <input type="file" onChange={handleFileChange} accept=".csv" className="file-input" />
-                <div className="upload-btn-container">
-                  <button onClick={handleUpload} disabled={!selectedFile} className="upload-btn">
-                    Upload File
-                  </button>
-                </div>
-                {error && <div className="error-message">{error}</div>}
-                {loading && <div className="loading-message">Loading...</div>}
+        <div className={`main-container ${isSidebarExpanded ? 'sidebar-expanded' : 'sidebar-collapsed'}`}>
+          {!fileUploaded && (
+            <div className="upload-container">
+              <h1>Upload Your CSV File</h1>
+              <input type="file" onChange={handleFileChange} accept=".csv" className="file-input" />
+              <div className="upload-btn-container">
+                <button onClick={handleUpload} disabled={!selectedFile} className="upload-btn">
+                  Upload File
+                </button>
               </div>
-              {columns.length > 0 && (
-                <div className="table-section" style={{ marginTop: '80px', marginBottom: '80px' }}>
-                  <table className="data-table">
-                    <thead>
-                      <tr>
-                        {columns.map((column, index) => (
-                          <th key={index}>{column}</th>
-                        ))}
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {currentPageData.map((row, rowIndex) => (
-                        <tr key={rowIndex}>
-                          {columns.map((column, colIndex) => (
-                            <td key={colIndex}>{row[column]}</td>
-                          ))}
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                  <div className="pagination-controls" style={{ marginTop: '40px' }}>
-                    <button onClick={handlePreviousPage} disabled={pageIndex === 0} className="pagination-button">
-                      Previous
-                    </button>
-                    <span className="pagination-span">
-                      Page {pageIndex + 1} of {Math.ceil(data.length / pageSize)}
-                    </span>
-                    <button onClick={handleNextPage} disabled={(pageIndex + 1) * pageSize >= data.length} className="pagination-button">
-                      Next
-                    </button>
-                    <select
-                      value={pageSize}
-                      onChange={(e) => setPageSize(Number(e.target.value))}
-                      className="pagination-select"
-                    >
-                      {[10, 20, 30, 40, 50].map((size) => (
-                        <option key={size} value={size}>
-                          Show {size}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                </div>
-              )}
-            </>
-          ) : (
-            <>
-              <div className="chart-box-small" style={{ width: barChartSize.width, height: barChartSize.height, margin: '80px auto 80px 60px' }}>
-                <h2 className="chart-box-title">{activeChart} Bar Chart</h2>
-                {activeChart && barChartData && <Bar data={barChartData} options={barChartOptions} />}
-                <div className="chart-size-controls" style={{ marginTop: '40px' }}>
-                  <label>
-                    Width:
-                    <input
-                      type="text"
-                      name="width"
-                      value={barChartSize.width}
-                      onChange={handleBarChartSizeChange}
-                    />
-                  </label>
-                  <label>
-                    Height:
-                    <input
-                      type="text"
-                      name="height"
-                      value={barChartSize.height}
-                      onChange={handleBarChartSizeChange}
-                    />
-                  </label>
-                </div>
-              </div>
-              {columns.length > 0 && (
-                <div className="table-section" style={{ marginTop: '80px', marginBottom: '80px' }}>
-                  <table className="data-table">
-                    <thead>
-                      <tr>
-                        {columns.map((column, index) => (
-                          <th key={index}>{column}</th>
-                        ))}
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {currentPageData.map((row, rowIndex) => (
-                        <tr key={rowIndex}>
-                          {columns.map((column, colIndex) => (
-                            <td key={colIndex}>{row[column]}</td>
-                          ))}
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                  <div className="pagination-controls" style={{ marginTop: '40px' }}>
-                    <button onClick={handlePreviousPage} disabled={pageIndex === 0} className="pagination-button">
-                      Previous
-                    </button>
-                    <span className="pagination-span">
-                      Page {pageIndex + 1} of {Math.ceil(data.length / pageSize)}
-                    </span>
-                    <button onClick={handleNextPage} disabled={(pageIndex + 1) * pageSize >= data.length} className="pagination-button">
-                      Next
-                    </button>
-                    <select
-                      value={pageSize}
-                      onChange={(e) => setPageSize(Number(e.target.value))}
-                      className="pagination-select"
-                    >
-                      {[10, 20, 30, 40, 50].map((size) => (
-                        <option key={size} value={size}>
-                          Show {size}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                </div>
-              )}
-            </>
+              {error && <div className="error-message">{error}</div>}
+              {loading && <div className="loading-message">Loading...</div>}
+            </div>
           )}
+
+          <div className="chart-and-table-container" style={{ position: 'relative', height: '100%', padding: '0' }}>
+            {/* Draggable Table */}
+            {showTable && (
+              <Draggable bounds=".chart-and-table-container" defaultPosition={{ x: 0, y: 0 }}>
+                <div className="table-draggable" style={{ width: tableSize.width, height: tableSize.height }}>
+                  <div className="table-section">
+                    <table className="data-table">
+                      <thead>
+                        <tr>
+                          {columns.map((column, index) => (
+                            <th key={index}>{column}</th>
+                          ))}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {currentPageData.map((row, rowIndex) => (
+                          <tr key={rowIndex}>
+                            {columns.map((column, colIndex) => (
+                              <td key={colIndex}>{row[column]}</td>
+                            ))}
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                    <div className="pagination-controls">
+                      <label htmlFor="pageSize">Rows per page:</label>
+                      <select id="pageSize" value={pageSize} onChange={(e) => setPageSize(Number(e.target.value))}>
+                        <option value={5}>5</option>
+                        <option value={10}>10</option>
+                        <option value={20}>20</option>
+                      </select>
+                      <button onClick={handlePreviousPage} disabled={pageIndex === 0}>
+                        Previous
+                      </button>
+                      <button onClick={handleNextPage} disabled={(pageIndex + 1) * pageSize >= data.length}>
+                        Next
+                      </button>
+                    </div>
+                    <div className="table-resize-controls">
+                      <label>Width:</label>
+                      <input type="range" name="width" min="30%" max="100%" value={tableSize.width} onChange={handleTableSizeChange} />
+                      <label>Height:</label>
+                      <input type="range" name="height" min="200px" max="600px" value={tableSize.height} onChange={handleTableSizeChange} />
+                    </div>
+                  </div>
+                </div>
+              </Draggable>
+            )}
+
+            {/* Draggable Charts */}
+            {charts.length > 0 && charts.map((chart, index) => (
+              <Draggable key={index} bounds=".chart-and-table-container" defaultPosition={{ x: 20 * index, y: 100 + 20 * index }}>
+                <div className="chart-box-small" style={{ width: barChartSize.width, height: barChartSize.height }}>
+                  <h2 className="chart-box-title">{chart.chartType}</h2>
+                  {chart.type === 'bar' && <Bar data={chart.data} options={barChartOptions} />}
+                  {chart.type === 'pie' && <Pie data={chart.data} />}
+                  {chart.type === 'line' && <Line data={chart.data} options={lineChartOptions} />}
+                </div>
+              </Draggable>
+            ))}
+          </div>
         </div>
       </div>
     </div>
   );
+};
+
+const barChartOptions = {
+  maintainAspectRatio: false,
+  responsive: true,
+  plugins: {
+    legend: {
+      position: 'top',
+    },
+    title: {
+      display: true,
+      text: 'Bar Chart',
+    },
+  },
+};
+
+const lineChartOptions = {
+  maintainAspectRatio: false,
+  responsive: true,
+  plugins: {
+    legend: {
+      position: 'top',
+    },
+    title: {
+      display: true,
+      text: 'Line Chart',
+    },
+  },
 };
 
 export default Build;
