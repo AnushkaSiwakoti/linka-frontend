@@ -172,7 +172,6 @@ body, html {
   margin-top: 10px;
 }
 
-/* Chart and Table Container Styling */
 .chart-and-table-container {
   position: relative;
   width: 100%;
@@ -180,15 +179,22 @@ body, html {
   box-sizing: border-box;
   background-color: #1a1a1a;
   border-radius: 8px;
-  min-height: 1000px;
+  min-height: 1200px; /* Increased the minimum height to accommodate multiple charts */
+  overflow: hidden; /* Prevent overflowing elements */
 }
 
 .chart-and-table-container > .table-draggable,
 .chart-and-table-container > .chart-box-small {
+  background-color: #222; /* To ensure it stands out from the background */
+  border: 2px solid #333;
   width: 100%;
-  min-height: 600px;
-  resize: both;
-  overflow: visible;
+  min-height: 1500px; /* Increased from 1000px to 1500px for more room initially */
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.5);
+  overflow: auto; /* Allow scrolling if content exceeds container size */
+  padding: 10px; /* Added padding for better layout */
+  resize: both; /* Allow manual resizing */
+  position: relative;
+
 }
 
 /* Table Styling */
@@ -197,19 +203,20 @@ body, html {
   overflow-x: hidden;
 }
 
+/* Updated Table Styling */
 .data-table {
   width: 100%;
-  table-layout: fixed;
+  table-layout: auto; /* Changed from fixed to auto for better distribution */
   background-color: #1a1a1a;
   border-collapse: collapse;
+  word-wrap: break-word; /* Added to handle long text more gracefully */
 }
 
 .data-table th, .data-table td {
-  padding: 8px;
+  padding: 12px; /* Increased padding for better spacing */
   border: 1px solid #fff;
   text-align: left;
   color: #fff;
-  min-width: 150px;
 }
 
 .data-table th {
@@ -281,4 +288,51 @@ body, html {
 .loading-message {
   color: white;
   text-align: center;
+}
+
+.slider-controls {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: #fff;
+}
+
+.slider-controls input[type="range"] {
+  margin: 0 10px;
+}
+
+.resizable-draggable-container {
+  margin-bottom: 20px; /* Add spacing between charts and tables to avoid overlap */
+}
+
+/* Specific styles for when components are resized */
+.react-resizable {
+  border: 2px dashed #007bff50; /* Highlight the boundary of the resizable box for better visual clarity */
+}
+
+.react-resizable-handle {
+  background-color: #0d192500; /* Handle for resizing */
+  width: 10px;
+  height: 10px;
+}
+
+.chart-box-small {
+  position: relative;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.delete-button {
+  background: none;
+  border: none;
+  color: #ff4d4f;
+  right: 10px; /* Anchored to the top-right corner */
+  font-size: 20px;
+  cursor: pointer;
+  z-index: 10;
+}
+
+.delete-button:hover {
+  color: #ff7875;
 }

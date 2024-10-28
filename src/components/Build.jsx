@@ -3,6 +3,10 @@ import Draggable from 'react-draggable';
 import Papa from 'papaparse';
 import { Bar, Pie, Line } from 'react-chartjs-2';
 import { Chart as ChartJS, CategoryScale, LinearScale, BarElement, ArcElement, PointElement, LineElement, Title, Tooltip, Legend } from 'chart.js';
+import Slider from 'rc-slider';
+import 'rc-slider/assets/index.css';
+import { ResizableBox } from 'react-resizable';
+import 'react-resizable/css/styles.css';
 import './Build.css';
 import Navbar from './Navbar';
 
@@ -18,11 +22,11 @@ const Build = () => {
   const [data, setData] = useState([]);
   const [charts, setCharts] = useState([]);
   const [showTable, setShowTable] = useState(false);
-  const [tableSize, setTableSize] = useState({ width: '70%', height: '400px' });
+  const [tableSize, setTableSize] = useState({ width: 700, height: 400 });
   const [pageSize, setPageSize] = useState(10);
   const [pageIndex, setPageIndex] = useState(0);
   const [classification, setClassification] = useState({ numericalColumns: [], categoricalColumns: [] });
-  const [barChartSize, setBarChartSize] = useState({ width: '50%', height: '300px' });
+  const [filterRanges, setFilterRanges] = useState({});
 
   useEffect(() => {
     if (columns.length > 0) {
@@ -147,7 +151,7 @@ const Build = () => {
 
   const handleTableSizeChange = (e) => {
     const { name, value } = e.target;
-    setTableSize((prevSize) => ({ ...prevSize, [name]: value }));
+    setTableSize((prevSize) => ({ ...prevSize, [name]: parseInt(value) }));
   };
 
   const handleNewFileUpload = () => {
@@ -174,6 +178,38 @@ const Build = () => {
 
   const handlePreviousPage = () => {
     setPageIndex((prev) => Math.max(prev - 1, 0));
+  };
+
+  const handleFilterRangeChange = (chartType, values) => {
+    setFilterRanges((prevRanges) => ({ ...prevRanges, [chartType]: values }));
+
+    // Update chart data dynamically with the new filter range
+    const filteredData = data.slice(values[0], values[1] + 1);
+    setCharts((prevCharts) =>
+      prevCharts.map((chart) => {
+        if (chart.chartType === chartType) {
+          return {
+            ...chart,
+            data: {
+              ...chart.data,
+              labels: filteredData.map((row) => row[classification.categoricalColumns[0]] || 'Unknown'),
+              datasets: chart.data.datasets.map((dataset) => ({
+                ...dataset,
+                data: filteredData.map((row) => parseFloat(row[chartType]) || 0),
+              })),
+            },
+          };
+        }
+        return chart;
+      })
+    );
+  };
+
+  const handleDeleteComponent = (index) => {
+    const confirmDelete = window.confirm("Are you sure you want to delete this component?");
+    if (confirmDelete) {
+      setCharts((prevCharts) => prevCharts.filter((_, i) => i !== index));
+    }
   };
 
   const currentPageData = data.slice(pageIndex * pageSize, (pageIndex + 1) * pageSize);
@@ -207,7 +243,7 @@ const Build = () => {
         </div>
 
         {/* Main Content */}
-        <div className={`main-container ${isSidebarExpanded ? 'sidebar-expanded' : 'sidebar-collapsed'}`}>
+        <div className={`main-container ${isSidebarExpanded ? 'sidebar-expanded' : 'sidebar-collapsed'}`} style={{ padding: '20px' }}>
           {!fileUploaded && (
             <div className="upload-container">
               <h1>Upload Your CSV File</h1>
@@ -222,64 +258,92 @@ const Build = () => {
             </div>
           )}
 
-          <div className="chart-and-table-container" style={{ position: 'relative', height: '100%', padding: '0' }}>
-            {/* Draggable Table */}
+          <div className="chart-and-table-container" style={{ position: 'relative', minHeight: '1600px', padding: '20px' }}>
+            {/* Resizable and Draggable Table */}
             {showTable && (
-              <Draggable bounds=".chart-and-table-container" defaultPosition={{ x: 0, y: 0 }}>
-                <div className="table-draggable" style={{ width: tableSize.width, height: tableSize.height }}>
-                  <div className="table-section">
-                    <table className="data-table">
-                      <thead>
-                        <tr>
-                          {columns.map((column, index) => (
-                            <th key={index}>{column}</th>
-                          ))}
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {currentPageData.map((row, rowIndex) => (
-                          <tr key={rowIndex}>
-                            {columns.map((column, colIndex) => (
-                              <td key={colIndex}>{row[column]}</td>
+              <Draggable bounds=".chart-and-table-container">
+                <ResizableBox width={tableSize.width} height={tableSize.height} minConstraints={[300, 200]} maxConstraints={[1200, 800]} resizeHandles={['se', 'sw', 'ne', 'nw', 'n', 's', 'e', 'w']}>
+                  <div className="table-draggable" style={{ width: '100%', height: '100%', position: 'relative' }}>
+                    <button className="delete-button" onClick={() => setShowTable(false)} title="Delete Table">
+                      ❌
+                    </button>
+                    <div className="table-section">
+                      <div style={{ overflowX: 'auto' }}>
+                        <table className="data-table">
+                          <thead>
+                            <tr>
+                              {columns.map((column, index) => (
+                                <th key={index}>{column}</th>
+                              ))}
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {currentPageData.map((row, rowIndex) => (
+                              <tr key={rowIndex}>
+                                {columns.map((column, colIndex) => (
+                                  <td key={colIndex}>{row[column]}</td>
+                                ))}
+                              </tr>
                             ))}
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                    <div className="pagination-controls">
-                      <label htmlFor="pageSize">Rows per page:</label>
-                      <select id="pageSize" value={pageSize} onChange={(e) => setPageSize(Number(e.target.value))}>
-                        <option value={5}>5</option>
-                        <option value={10}>10</option>
-                        <option value={20}>20</option>
-                      </select>
-                      <button onClick={handlePreviousPage} disabled={pageIndex === 0}>
-                        Previous
-                      </button>
-                      <button onClick={handleNextPage} disabled={(pageIndex + 1) * pageSize >= data.length}>
-                        Next
-                      </button>
-                    </div>
-                    <div className="table-resize-controls">
-                      <label>Width:</label>
-                      <input type="range" name="width" min="30%" max="100%" value={tableSize.width} onChange={handleTableSizeChange} />
-                      <label>Height:</label>
-                      <input type="range" name="height" min="200px" max="600px" value={tableSize.height} onChange={handleTableSizeChange} />
+                          </tbody>
+                        </table>
+                      </div>
+                      <div className="pagination-controls">
+                        <label htmlFor="pageSize">Rows per page:</label>
+                        <select id="pageSize" value={pageSize} onChange={(e) => setPageSize(Number(e.target.value))}>
+                          <option value={5}>5</option>
+                          <option value={10}>10</option>
+                          <option value={20}>20</option>
+                        </select>
+                        <button onClick={handlePreviousPage} disabled={pageIndex === 0}>
+                          Previous
+                        </button>
+                        <button onClick={handleNextPage} disabled={(pageIndex + 1) * pageSize >= data.length}>
+                          Next
+                        </button>
+                      </div>
                     </div>
                   </div>
-                </div>
+                </ResizableBox>
               </Draggable>
             )}
 
-            {/* Draggable Charts */}
+            {/* Resizable and Draggable Charts */}
             {charts.length > 0 && charts.map((chart, index) => (
-              <Draggable key={index} bounds=".chart-and-table-container" defaultPosition={{ x: 20 * index, y: 100 + 20 * index }}>
-                <div className="chart-box-small" style={{ width: barChartSize.width, height: barChartSize.height }}>
-                  <h2 className="chart-box-title">{chart.chartType}</h2>
-                  {chart.type === 'bar' && <Bar data={chart.data} options={barChartOptions} />}
-                  {chart.type === 'pie' && <Pie data={chart.data} />}
-                  {chart.type === 'line' && <Line data={chart.data} options={lineChartOptions} />}
-                </div>
+              <Draggable key={index} bounds=".chart-and-table-container">
+                <ResizableBox
+                  width={400}
+                  height={300}
+                  minConstraints={[300, 200]}
+                  maxConstraints={[800, 600]}
+                  resizeHandles={['se', 'sw', 'ne', 'nw', 'n', 's', 'e', 'w']}
+                  className="resizable-draggable-container"
+                >
+                  <div className="chart-box-small" style={{ width: '100%', height: '100%', border: 'none', position: 'relative' }}>
+                    <button className="delete-button" onClick={() => handleDeleteComponent(index)} title="Delete Chart">
+                      ❌
+                    </button>
+                    <h2 className="chart-box-title">{chart.chartType}</h2>
+                    {chart.type === 'bar' && <Bar data={chart.data} options={barChartOptions} />}
+                    {chart.type === 'pie' && <Pie data={chart.data} />}
+                    {chart.type === 'line' && <Line data={chart.data} options={lineChartOptions} />}
+                    <div className="filter-controls" style={{ marginTop: '10px' }}>
+                      <label>
+                        Filter Range:
+                        <Slider
+                          range
+                          min={0}
+                          max={data.length - 1}
+                          value={filterRanges[chart.chartType] || [0, data.length - 1]}
+                          onChange={(values) => handleFilterRangeChange(chart.chartType, values)}
+                          trackStyle={[{ backgroundColor: '#007bff' }]}
+                          handleStyle={[{ borderColor: '#007bff' }, { borderColor: '#007bff' }]}
+                        />
+                      </label>
+                      <span>Showing data from {filterRanges[chart.chartType]?.[0] || 0} to {filterRanges[chart.chartType]?.[1] || data.length - 1}</span>
+                    </div>
+                  </div>
+                </ResizableBox>
               </Draggable>
             ))}
           </div>
