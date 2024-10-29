@@ -1,26 +1,56 @@
-/* Layout for full viewport height with sticky footer */
+/* Container styling */
 .dashboards-container {
+  position: relative;
   display: flex;
   flex-direction: column;
   min-height: 100vh;
-  background-color: #000;
-  color: #fff;
-}
-
-.main-content {
-  flex: 1;
-  padding: 30px 50px; /* Ensures padding on larger screens */
-}
-
-/* Dashboard section */
-.dashboard-section {
-  padding: 20px;
-}
-
-.section-title {
-  font-size: 2rem;
-  margin-bottom: 20px;
+  width: 100%;
   color: #ffffff;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  overflow-x: hidden; /* Prevents horizontal scrolling */
+}
+
+/* Background Image Styling */
+.background-image {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  object-fit: cover;
+  z-index: -2;
+  opacity: 0.45;
+  filter: brightness(0.9);
+}
+
+/* Dark Overlay */
+.dashboards-container::before {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0, 0, 0, 0.6); /* Black overlay with 60% opacity */
+  z-index: -1; /* Place it between the background image and the main content */
+}
+
+/* Main content area */
+.dashboard-main-content {
+  margin-top: 40px; /* Adds space below the Navbar */
+  padding: 20px; /* Consistent padding around the content */
+  position:absolute;
+  flex-direction: column;
+  z-index: 1;
+  width: 100%;
+}
+
+/* Section title */
+.section-title {
+  font-size: 2.2rem;
+  color: #e0e0e0;
+  margin-bottom: 20px;
+  text-align: left;
 }
 
 /* Dashboard list container */
@@ -28,36 +58,60 @@
   display: flex;
   gap: 20px;
   flex-wrap: wrap;
+  align-items: flex-start;
+  width: 100%;
 }
 
 /* Individual dashboard card */
 .dashboard-card {
-  background-color: #fff;
-  border: 2px solid #007bff;
-  border-radius: 8px;
-  width: 250px;
+  background-color: #2b2b2b;
+  border: 1px solid #4f90d5;
+  border-radius: 10px;
+  width: 260px;
   padding: 20px;
   text-align: center;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-  transition: background-color 0.3s ease;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+  transition: background-color 0.3s, transform 0.2s;
 }
 
 .dashboard-card:hover {
-  background-color: #f0f0f0;
+  background-color: #3b3b3b;
+  transform: translateY(-5px);
 }
 
+/* Dashboard name */
 .dashboard-name {
-  font-size: 1.5rem;
-  color: #007bff;
-  margin-bottom: 10px;
+  font-size: 1.6rem;
+  color: #4f90d5;
+  margin-bottom: 15px;
 }
 
-/* Footer Styling */
+/* Dashboard preview text */
+.dashboard-preview {
+  font-size: 1rem;
+  color: #ccc;
+}
+
+/* Footer styling */
 .footer {
-  background-color: #333;
-  color: #fff;
-  padding: 10px;
+  padding: 20px;
   text-align: center;
-  font-size: 0.9rem;
+  background-color: #1c1c1c;
+  color: #aaa;
+  border-top: 1px solid #333;
+  position: relative;
+  bottom: 0;
   width: 100%;
+}
+
+/* Scroll and container adjustments for responsiveness */
+@media (max-width: 768px) {
+  .dashboard-list {
+    flex-direction: column;
+    gap: 15px;
+  }
+
+  .main-content {
+    padding: 20px;
+  }
 }

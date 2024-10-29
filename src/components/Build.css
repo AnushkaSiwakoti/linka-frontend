@@ -1,31 +1,65 @@
 /* General Styling */
-body, html {
-  margin: 0;
-  padding: 0;
-  font-family: Arial, sans-serif;
-  height: 100%;
-  background-color: #000;
-  color: #fff;
-}
-
 .build-page {
+  position: relative;
   display: flex;
   flex-direction: column;
   min-height: 100vh;
   background-color: #000;
   color: #fff;
   padding: 0 50px;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+.background-image {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  object-fit: cover;
+  z-index: -2;
+  opacity: 0.45;
+  filter: brightness(0.9);
 }
 
-/* Navbar Styling */
-.navbar {
-  height: 60px;
-  background-color: #333;
-  color: white;
-  display: flex;
-  align-items: center;
-  padding: 0 20px;
-  border-bottom: 2px solid #ffffff;
+/* Dark Overlay */
+.build-page::before {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0, 0, 0, 0.6); /* Black overlay with 60% opacity */
+  z-index: -1; /* Place it between the background image and the main content */
+}
+
+/* Main Content Styling */
+.build-content {
+  margin-top: 70px; /* Ensure the content doesn't overlap the navbar */
+  padding: 20px;
+  position: relative;
+  z-index: 1;
+  flex-grow: 1;
+  width: calc(100% - 40px); /* Ensure it doesn’t extend beyond the viewport */
+}
+
+/* Main Content Styling */
+.main-container {
+  flex-grow: 1;
+  margin-left: 250px; /* Matches the sidebar width when expanded */
+  padding: 40px;
+  background-color: #222;
+  border-radius: 10px;
+  max-width: 1000px;
+  margin: 40px auto;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.5);
+  transition: margin-left 0.3s;
+}
+
+.logout-button {
+  color: #ffffff;
+  margin-left: 20px;
+  text-decoration: none;
 }
 
 /* Sidebar Styling */
@@ -109,18 +143,6 @@ body, html {
 
 .sidebar.expanded button span {
   display: inline;
-}
-
-/* Main Content Styling */
-.main-container {
-  margin-left: 250px;
-  padding: 40px;
-  background-color: #222;
-  border-radius: 10px;
-  max-width: 1000px;
-  margin: 40px auto;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.5);
-  transition: margin-left 0.3s;
 }
 
 .main-container.sidebar-collapsed {
