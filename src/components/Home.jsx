@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import Navbar from './Navbar';
 import SignUp from './SignUp';
 import Login from './Login';
+import Footer from './Footer';
 import './Home.css';
 
 const Home = () => {
@@ -88,6 +89,7 @@ const Home = () => {
           </div>
         </div>
       </div>
+      <Footer />
     </div>
   );
 };
