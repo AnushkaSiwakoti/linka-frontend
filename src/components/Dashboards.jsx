@@ -1,6 +1,7 @@
 import React from 'react';
 import './Dashboards.css';
 import Navbar from './Navbar';
+import Footer from './Footer';
 
 const Dashboards = () => {
   return (
@@ -23,6 +24,7 @@ const Dashboards = () => {
           </div>
         </div>
       </div>
+      <Footer />
     </div>
   );
 };

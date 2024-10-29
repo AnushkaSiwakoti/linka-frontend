@@ -1,0 +1,22 @@
+/* Footer.css */
+.footer {
+    background-color: #333;
+    color: #fff;
+    padding: 8px 10px; /* Reduce padding to make the footer smaller */
+    font-size: 18px; /* Make font size smaller */
+    text-align: center;
+    position: relative; /* Set relative positioning */
+    width: 100%;
+  }
+  
+  /* Ensure footer is positioned below all content */
+  .home-container {
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh; /* Full viewport height */
+  }
+  
+  .main-content {
+    flex: 1; /* Take up remaining space to push footer down */
+  }
+  
