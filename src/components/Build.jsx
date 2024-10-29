@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import Draggable from 'react-draggable';
 import Papa from 'papaparse';
 import { Bar, Pie, Line } from 'react-chartjs-2';
@@ -23,17 +23,39 @@ const Build = () => {
   const [data, setData] = useState([]);
   const [charts, setCharts] = useState([]);
   const [showTable, setShowTable] = useState(false);
-  const [tableSize, setTableSize] = useState({ width: 700, height: 400 });
+  const [tableSize] = useState({ width: 700, height: 400 });
   const [pageSize, setPageSize] = useState(10);
   const [pageIndex, setPageIndex] = useState(0);
   const [classification, setClassification] = useState({ numericalColumns: [], categoricalColumns: [] });
   const [filterRanges, setFilterRanges] = useState({});
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+
+  useEffect(() => {
+    const loggedInUser = localStorage.getItem('username');
+    if (loggedInUser) {
+      setIsLoggedIn(true);
+    }
+  }, []);
+
+  const handleLogout = () => {
+    localStorage.removeItem('username');
+    setIsLoggedIn(false);
+  };
+
+  // Define classifyColumns using useCallback to prevent unnecessary re-creations
+  const classifyColumns = useCallback(() => {
+    const numericalColumns = columns.filter((column) => {
+      return data.every((row) => !isNaN(parseFloat(row[column])));
+    });
+    const categoricalColumns = columns.filter((column) => !numericalColumns.includes(column));
+    setClassification({ numericalColumns, categoricalColumns });
+  }, [columns, data]);
 
   useEffect(() => {
     if (columns.length > 0) {
       classifyColumns();
     }
-  }, [columns]);
+  }, [columns, classifyColumns]);
 
   const toggleSidebar = () => {
     setIsSidebarExpanded(!isSidebarExpanded);
@@ -153,11 +175,6 @@ const Build = () => {
     setShowTable(true);
   };
 
-  const handleTableSizeChange = (e) => {
-    const { name, value } = e.target;
-    setTableSize((prevSize) => ({ ...prevSize, [name]: parseInt(value) }));
-  };
-
   const handleNewFileUpload = () => {
     setSelectedFile(null);
     setColumns([]);
@@ -166,14 +183,6 @@ const Build = () => {
     setError(null);
     setFileUploaded(false);
     setShowTable(false);
-  };
-
-  const classifyColumns = () => {
-    const numericalColumns = columns.filter((column) => {
-      return data.every((row) => !isNaN(parseFloat(row[column])));
-    });
-    const categoricalColumns = columns.filter((column) => !numericalColumns.includes(column));
-    setClassification({ numericalColumns, categoricalColumns });
   };
 
   const handleNextPage = () => {
@@ -222,9 +231,11 @@ const Build = () => {
 
   return (
     <div className="build-page">
-      <Navbar isLoggedIn={true} handleLogout={() => {}} />
-
+      <Navbar className="navbar" isLoggedIn={isLoggedIn} handleLogout={handleLogout} />
+      
       <div className="build-content">
+      <img src="/shapes.png" alt="background shapes" className="background-image" />
+
       {fileUploaded && (
     <div className={`sidebar ${isSidebarExpanded ? 'expanded' : 'collapsed'}`} style={{ marginRight: '50px' }}>
       <button className="toggle-btn" onClick={toggleSidebar}>{isSidebarExpanded ? '⬅' : '➡'}</button>

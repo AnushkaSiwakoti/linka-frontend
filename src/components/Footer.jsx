@@ -1,4 +1,4 @@
-// Footer.js
+
 import React from 'react';
 import './Footer.css'; // Add any custom styles for the footer
 

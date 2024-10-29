@@ -10,7 +10,6 @@ const Home = () => {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
 
   useEffect(() => {
-    // Check if the user is already logged in
     const loggedInUser = localStorage.getItem('username');
     if (loggedInUser) {
       setIsLoggedIn(true);
@@ -18,7 +17,7 @@ const Home = () => {
   }, []);
 
   const toggleForm = () => {
-    setIsSignUp(!isSignUp);
+    setIsSignUp((prev) => !prev);
   };
 
   const handleLogout = () => {
@@ -28,8 +27,11 @@ const Home = () => {
 
   return (
     <div className="home-container">
-      <Navbar isLoggedIn={isLoggedIn} handleLogout={handleLogout} />
-      <div className="main-content">
+      {/* Navbar */}
+      <Navbar className="navbar" isLoggedIn={isLoggedIn} handleLogout={handleLogout} />
+      {/* Main Content */}
+      <div className="home-main-content">
+      <img src="/shapes.png" alt="background shapes" className="background-image" />
         <div className="form-container">
           {!isLoggedIn ? (
             isSignUp ? (
@@ -67,28 +69,10 @@ const Home = () => {
               Linka simplifies the creation of custom dashboard builders, giving you the power to design, customize, and deploy in one streamlined step!
             </p>
           </div>
-
-          {/* Decorative Shapes */}
-          <div className="shape-container">
-            <div className="shape shape1"></div>
-            <div className="shape shape2"></div>
-            <div className="shape triangle1"></div>
-            <div className="shape shape3"></div>
-            <div className="shape shape4"></div>
-            <div className="shape shape5"></div>
-            <div className="shape shape6"></div>
-            <div className="shape square1"></div>
-            <div className="shape square2"></div>
-            <div className="shape square3"></div>
-            <div className="shape shape7"></div>
-            <div className="shape shape8"></div>
-            <div className="shape shape9"></div>
-            <div className="shape cylinder1"></div>
-            <div className="shape cylinder2"></div>
-            <div className="shape triangle2"></div>
-          </div>
         </div>
       </div>
+
+      {/* Footer */}
       <Footer />
     </div>
   );

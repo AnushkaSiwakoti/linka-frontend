@@ -1,342 +1,97 @@
-/* Home Container */
+/* Home Container Setup */
 .home-container {
+  position: relative; /* Allows positioning of child elements relative to this container */
   display: flex;
   flex-direction: column;
   min-height: 100vh;
-  background-color: #000;
-  color: #fff;
-  padding: 0 50px;
+  width: 100%;
+  color: #ffffff;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  overflow: hidden;
 }
 
-/* Main Content */
-.main-content {
+/* Background Image Styling */
+.background-image {
+  position: fixed; /* Fix the image to the viewport */
+  top: 0;
+  left: 0;
+  width: 100vw; /* Cover entire viewport width */
+  height: 100vh; /* Cover entire viewport height */
+  object-fit: cover; /* Make sure the image covers the whole container */
+  z-index: 1; /* Ensure it stays behind everything */
+  opacity: 0.45; /* Adjust visibility */
+  filter: brightness(0.9); /* Make the background darker and give it a black tone */
+}
+
+/* Dark Overlay */
+.home-container:before {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(43, 42, 42, 0.7); /* Black overlay with 60% opacity */
+  z-index: 1; /* Place it between the background image and the main content */
+}
+
+.home-main-content {
   display: flex;
   width: 100%;
   justify-content: space-between;
   align-items: center;
-  padding-top: 40px;
+  padding: 60px 40px;
   position: relative;
+  z-index: 1;
+  flex-grow: 1;
+  background-color: transparent; /* Make sure no default background hides the image */
 }
 
-/* Form Container */
-.form-container {
-  flex: 0.35;
+.right-content {
+  flex: 1.5; /* Slightly larger to balance space */
   display: flex;
   flex-direction: column;
   align-items: center;
-  background-color: #1a1a1a;
-  padding: 30px;
-  border-radius: 15px;
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
-  max-width: 350px;
-  margin-right: 30px;
-}
-
-/* Signup/Login Forms */
-.signup-form,
-.login-form {
-  width: 100%;
-}
-
-.signup-form h2,
-.login-form h2 {
-  font-size: 28px;
+  justify-content: center;
   text-align: center;
-  margin-bottom: 25px;
-  color: #fff;
+  min-height: 75vh; /* Centers content vertically */
+  padding-right: 40px;
+  background-color: transparent; /* Prevent any black background */
 }
 
-/* Form Inputs */
-.form-group {
-  margin-bottom: 20px;
+/* Welcome Box */
+.welcome-box {
+  background: #ffffff; /* Explicit white background for the box */
+  padding: 30px;
+  width: 320px;
+  border-radius: 12px;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.1);
+  margin-bottom: 30px;
 }
 
-.form-group label {
-  display: block;
-  font-size: 16px;
-  margin-bottom: 8px;
-  color: #ccc;
+/* Welcome Header and Text */
+.welcome-header {
+  font-size: 1.8rem;
+  color: #333;
+  font-weight: bold;
+  margin-bottom: 10px;
 }
 
-.form-group input {
-  width: 100%;
-  padding: 12px;
-  font-size: 14px;
-  border: 1px solid #555;
-  border-radius: 6px;
-  background-color: #333;
-  color: #fff;
-  outline: none;
+.welcome-text {
+  font-size: 1rem;
+  color: #555;
 }
 
-.form-group input:focus {
-  border-color: #4f90d5;
-}
-
-/* Buttons */
-button {
-  width: 100%;
-  padding: 10px;
-  font-size: 14px;
-  background-color: #007bff;
-  color: white;
-  border: none;
-  border-radius: 6px;
-  cursor: pointer;
+/* Toggle Message Styling */
+.toggle-message {
   margin-top: 15px;
-  transition: background-color 0.3s ease;
-}
-
-button:hover {
-  background-color: #0056b3;
+  color: #fff;
 }
 
 .toggle-button {
   background: none;
   border: none;
   color: #4f90d5;
-  font-weight: bold;
   cursor: pointer;
-  font-size: 1rem;
   text-decoration: underline;
-  transition: color 0.3s ease;
-}
-
-.toggle-button:hover {
-  color: #007bff;
-}
-
-.toggle-message {
-  margin-top: 20px;
-  font-size: 1rem;
-  text-align: center;
-}
-
-/* Right Content for Welcome Message and Shapes */
-.right-content {
-  flex: 0.65;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  position: relative;
-  text-align: center;
-  z-index: 1;
-}
-
-/* Welcome Message Box */
-.welcome-box {
-  background: #ffffff;
-  padding: 40px;
-  width: 300px;
-  border-radius: 8px;
-  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.15);
-  z-index: 2;
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-}
-
-/* Welcome Message Text */
-.welcome-header {
-  font-size: 1.5rem;
-  color: #000;
-  font-weight: bold;
-  text-align: center;
-}
-
-.welcome-text {
-  font-size: 1rem;
-  color: #000;
-  text-align: center;
-}
-
-
-/* Shape Styles */
-.shape-container {
-  position: relative;
-  width: 100%;
-  height: 100%;
-  z-index: 1;
-}
-
-.shape {
-  position: absolute;
-}
-
-/* Circle Shapes */
-.shape.shape1 {
-  width: 220px;
-  height: 220px;
-  background: #b3cde3;
-  border-radius: 50%;
-  bottom: 40px;  
-  left: 50px;    
-  opacity: 0.9;  /* Slight transparency */
-}
-
-.shape.shape2 {
-  width: 120px;
-  height: 120px;
-  background: #03396c;
-  border-radius: 50%;
-  top: 20px;     
-  left: 60px;    
-  z-index: 1;
-  border: 2px solid #000;
-}
-
-.shape.shape3 {
-  width: 100px;
-  height: 100px;
-  background: #6497b1;
-  border-radius: 50%;
-  top: 50px;     
-  right: 20px;   
-  z-index: 3;
-  opacity: 0.7;  /* More transparency */
-}
-
-.shape.shape4 {
-  width: 150px;
-  height: 150px;
-  background: #005b96;
-  border-radius: 50%;
-  bottom: -40px; 
-  right: 50px;   
-  opacity: 0.8;  /* Slight transparency */
-}
-
-.shape.shape5 {
-  width: 90px;
-  height: 90px;
-  background: #1e88e5;
-  border-radius: 50%;
-  top: 100px;    
-  right: 100px;  
-}
-
-/* Semi-Circle Shapes */
-.shape.shape6 {
-  width: 180px;
-  height: 180px;
-  background: #5c6bc0;
-  border-radius: 50% 50% 0 0;
-  bottom: 20px; 
-  right: 70px;   
-  border: 3px solid #000;
-}
-
-/* Square Shapes */
-.shape.square1 {
-  width: 100px;
-  height: 100px;
-  background: #1565c0;
-  bottom: 25%;   
-  left: 48%;     
-  transform: translateX(-50%);
-  opacity: 0.8;  /* Slight transparency */
-}
-
-.shape.square2 {
-  width: 130px;
-  height: 130px;
-  background: #42a5f5;
-  top: 15%;      
-  left: 10%;     
-  border: 2px solid #000;
-  opacity: 0.85; /* Slight transparency */
-}
-
-.shape.square3 {
-  width: 140px;
-  height: 140px;
-  background: #64b5f6;
-  top: 65%;      
-  left: 20%;     
-  transform: rotate(15deg);
-  opacity: 0.7;  /* More transparency */
-}
-
-/* Cylinder Shapes */
-.shape.cylinder1 {
-  width: 80px;
-  height: 200px;
-  background: #4f90d5;
-  border-radius: 40px;
-  bottom: -30px; 
-  left: 170px;   
-  z-index: 4;
-}
-
-.shape.cylinder2 {
-  width: 60px;
-  height: 150px;
-  background: #3f51b5;
-  top: 35%;      
-  right: 300px;   
-  border-radius: 30px;
-  border: 2px solid #0e0d0d;
-  opacity: 0.75; /* Slight transparency */
-}
-
-/* Triangle Shapes */
-.shape.triangle1 {
-  width: 0;
-  height: 0;
-  border-left: 60px solid transparent;
-  border-right: 60px solid transparent;
-  border-bottom: 100px solid #007bbf;
-  top: 25%;      
-  left: 70%;     
-  transform: translate(-50%, -50%);
-  z-index: 3;
-}
-
-.shape.triangle2 {
-  width: 0;
-  height: 0;
-  border-left: 50px solid transparent;
-  border-right: 50px solid transparent;
-  border-top: 80px solid #2196f3;
-  bottom: 15%;   
-  left: 20%;     
-  transform: translate(-50%, 50%);
-  z-index: 1;
-  opacity: 0.8;  /* Slight transparency */
-}
-
-/* Additional Circle Shapes */
-.shape.shape7 {
-  width: 130px;
-  height: 130px;
-  background: #6ec6ff;
-  border-radius: 50%;
-  top: 75%;      
-  left: 15%;     
-  border: 2px solid #000;
-  opacity: 0.85; /* Slight transparency */
-}
-
-.shape.shape8 {
-  width: 110px;
-  height: 110px;
-  background: #5c6bc0;
-  border-radius: 50%;
-  bottom: 25%;   
-  right: 80px;   
-  opacity: 0.8;  /* Slight transparency */
-}
-
-.shape.shape9 {
-  width: 90px;
-  height: 90px;
-  background: #64b5f6;
-  top: 55%;      
-  right: 35%;    
-  transform: translate(50%);
-  border: 2px solid #000;
-  opacity: 0.75; /* Slight transparency */
 }
