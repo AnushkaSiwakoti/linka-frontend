@@ -9,6 +9,7 @@ import { ResizableBox } from 'react-resizable';
 import 'react-resizable/css/styles.css';
 import './Build.css';
 import Navbar from './Navbar';
+import Footer from './Footer';
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, ArcElement, PointElement, LineElement, Title, Tooltip, Legend);
 
@@ -139,6 +140,9 @@ const Build = () => {
           borderColor: 'rgba(75,192,192,1)',
           borderWidth: 2,
           fill: false,
+          tension: 0.4, // Smoothens the line chart
+          pointRadius: 3, // Makes the points more visible
+          pointBackgroundColor: 'rgba(75,192,192,1)',
         },
       ],
     };
@@ -214,33 +218,36 @@ const Build = () => {
 
   const currentPageData = data.slice(pageIndex * pageSize, (pageIndex + 1) * pageSize);
 
+  
+
   return (
     <div className="build-page">
       <Navbar isLoggedIn={true} handleLogout={() => {}} />
 
       <div className="build-content">
-        {/* Sidebar Section */}
-        <div className={`sidebar ${isSidebarExpanded ? 'expanded' : 'collapsed'}`} style={{ marginRight: '50px' }}>
-          <button className="toggle-btn" onClick={toggleSidebar}>{isSidebarExpanded ? '⬅' : '➡'}</button>
-          <div className="sidebar-content">
-            <button className="sidebar-button" onClick={handleNewFileUpload}>
-              🔄 <span className="sidebar-label">{isSidebarExpanded && 'Upload New File'}</span>
-            </button>
-            <button className="sidebar-button" onClick={handleShowTable}>
-              📋 <span className="sidebar-label">{isSidebarExpanded && 'Show Table'}</span>
-            </button>
-            {classification.numericalColumns.map((column) => (
-              <React.Fragment key={column}>
-                <button className="sidebar-button" onClick={() => handleShowBarChart(column)}>📊 <span className="sidebar-label">{isSidebarExpanded && `${column} Bar Chart`}</span></button>
-                <button className="sidebar-button" onClick={() => handleShowLineChart(column)}>📈 <span className="sidebar-label">{isSidebarExpanded && `${column} Line Chart`}</span></button>
-              </React.Fragment>
-            ))}
-            {classification.categoricalColumns.length > 0 && (
-              <button className="sidebar-button" onClick={handleShowPieChart}>🥧 <span className="sidebar-label">{isSidebarExpanded && 'Pie Chart'}</span></button>
-            )}
-            <button className="sidebar-button" disabled>📉 <span className="sidebar-label">{isSidebarExpanded && 'Metrics (Coming Soon)'}</span></button>
-          </div>
-        </div>
+      {fileUploaded && (
+    <div className={`sidebar ${isSidebarExpanded ? 'expanded' : 'collapsed'}`} style={{ marginRight: '50px' }}>
+      <button className="toggle-btn" onClick={toggleSidebar}>{isSidebarExpanded ? '⬅' : '➡'}</button>
+      <div className="sidebar-content">
+        <button className="sidebar-button" onClick={handleNewFileUpload}>
+          🔄 <span className="sidebar-label">{isSidebarExpanded && 'Upload New File'}</span>
+        </button>
+        <button className="sidebar-button" onClick={handleShowTable}>
+          📋 <span className="sidebar-label">{isSidebarExpanded && 'Show Table'}</span>
+        </button>
+        {classification.numericalColumns.map((column) => (
+          <React.Fragment key={column}>
+            <button className="sidebar-button" onClick={() => handleShowBarChart(column)}>📊 <span className="sidebar-label">{isSidebarExpanded && `${column} Bar Chart`}</span></button>
+            <button className="sidebar-button" onClick={() => handleShowLineChart(column)}>📈 <span className="sidebar-label">{isSidebarExpanded && `${column} Line Chart`}</span></button>
+          </React.Fragment>
+        ))}
+        {classification.categoricalColumns.length > 0 && (
+          <button className="sidebar-button" onClick={handleShowPieChart}>🥧 <span className="sidebar-label">{isSidebarExpanded && 'Pie Chart'}</span></button>
+        )}
+        <button className="sidebar-button" disabled>📉 <span className="sidebar-label">{isSidebarExpanded && 'Metrics (Coming Soon)'}</span></button>
+      </div>
+    </div>
+  )}
 
         {/* Main Content */}
         <div className={`main-container ${isSidebarExpanded ? 'sidebar-expanded' : 'sidebar-collapsed'}`} style={{ padding: '20px' }}>
@@ -258,8 +265,7 @@ const Build = () => {
             </div>
           )}
 
-          <div className="chart-and-table-container" style={{ position: 'relative', minHeight: '1600px', padding: '20px' }}>
-            {/* Resizable and Draggable Table */}
+          <div className="chart-and-table-container" style={{ position: 'relative', height: '100%', padding: '0' }}>
             {showTable && (
               <Draggable bounds=".chart-and-table-container">
                 <ResizableBox width={tableSize.width} height={tableSize.height} minConstraints={[300, 200]} maxConstraints={[1200, 800]} resizeHandles={['se', 'sw', 'ne', 'nw', 'n', 's', 'e', 'w']}>
@@ -308,7 +314,6 @@ const Build = () => {
               </Draggable>
             )}
 
-            {/* Resizable and Draggable Charts */}
             {charts.length > 0 && charts.map((chart, index) => (
               <Draggable key={index} bounds=".chart-and-table-container">
                 <ResizableBox
@@ -349,6 +354,7 @@ const Build = () => {
           </div>
         </div>
       </div>
+      <Footer />
     </div>
   );
 };
@@ -377,6 +383,20 @@ const lineChartOptions = {
     title: {
       display: true,
       text: 'Line Chart',
+    },
+  },
+  scales: {
+    x: {
+      title: {
+        display: true,
+        text: 'Categories',
+      },
+    },
+    y: {
+      title: {
+        display: true,
+        text: 'Values',
+      },
     },
   },
 };
