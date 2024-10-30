@@ -1,109 +1,110 @@
-/* Container styling for SignUp and Login forms */
+
+/* Individual container styling */
 .signup-container, .login-container {
-    display:contents;
-    justify-content: center;
-    align-items: center;
-    min-height: 100vh;
-    width: auto;
-    padding: 20px;
-    z-index: 3;
-  }
-  
-  .signup-form, .login-form {
-    flex: 1;
-    max-width: 400px;
-    width: 100%; 
-    padding: 20px;
-    box-sizing: border-box;
-    z-index: 3;
-  }
-  
-  .signup-form h2, .login-form h2 {
-    font-size: 1.8rem;
-    margin-bottom: 20px;
-    color: #ffffff;
-    text-align: center;
-    font-weight: bold;
-    z-index: 3;
-  }
-  
-  .error-message {
-    color: #ff6b6b;
-    font-size: 0.9rem;
-    text-align: center;
-    margin-bottom: 15px;
-  }
-  
-  /* Form Group */
-  .form-group {
-    margin-bottom: 20px;
-  }
-  
-  .form-group label {
-    display: block;
-    font-size: 1rem;
-    margin-bottom: 8px;
-    color: #cccccc;
-  }
-  
-  .form-group input {
-    width: 100%;
-    padding: 12px;
-    font-size: 1rem;
-    color: #333333;
-    background-color: #ffffff;
-    border: 1px solid #cccccc;
-    border-radius: 6px;
-    outline: none;
-    transition: border-color 0.3s;
-  }
-  
-  .form-group input:focus {
-    border-color: #4f90d5;
-    box-shadow: 0 0 5px rgba(79, 144, 213, 0.3);
-  }
-  
-  /* Button Styles */
-  button {
-    width: 100%;
-    padding: 12px;
-    font-size: 1rem;
-    font-weight: bold;
-    background-color: #4f90d5;
-    color: #ffffff;
-    border: none;
-    border-radius: 6px;
-    cursor: pointer;
-    transition: background-color 0.3s, transform 0.1s;
-  }
-  
-  button:hover {
-    background-color: #4074a8;
-  }
-  
-  button:active {
-    transform: scale(0.98); /* Subtle scale effect when clicked */
-  }
-  
-  .toggle-message {
-    margin-top: 20px;
-    font-size: 1rem;
-    color: #cccccc;
-    text-align: center;
-  }
-  
-  .toggle-button {
-    background: none;
-    border: none;
-    color: #4f90d5;
-    font-weight: bold;
-    cursor: pointer;
-    font-size: 1rem;
-    text-decoration: underline;
-    transition: color 0.3s;
-  }
-  
-  .toggle-button:hover {
-    color: #4074a8;
-  }
-  
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 20px; /* Additional padding inside the form container */
+  width: 90%;
+  max-width: 480px;
+  background-color: #222;
+  border-radius: 15px;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
+}
+
+.signup-form, .login-form {
+  width: 100%;
+  max-width: 400px;
+  padding: 20px;
+  box-sizing: border-box;
+}
+
+.signup-form h2, .login-form h2 {
+  font-size: 2rem;
+  margin-bottom: 25px;
+  color: #ffffff;
+  text-align: center;
+  font-weight: bold;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.error-message {
+  color: #ff6b6b;
+  font-size: 0.9rem;
+  text-align: center;
+  margin-bottom: 15px;
+}
+
+/* Form Group */
+.form-group {
+  margin-bottom: 20px;
+}
+
+.form-group label {
+  display: block;
+  font-size: 1rem;
+  margin-bottom: 8px;
+  color: #cccccc;
+}
+
+.form-group input {
+  width: 100%;
+  padding: 12px;
+  font-size: 1rem;
+  color: #333333;
+  background-color: #ffffff;
+  border: 1px solid #cccccc;
+  border-radius: 6px;
+  outline: none;
+  transition: border-color 0.3s, box-shadow 0.3s;
+}
+
+.form-group input:focus {
+  border-color: #4f90d5;
+  box-shadow: 0 0 5px rgba(79, 144, 213, 0.3);
+}
+
+/* Button Styles */
+button {
+  width: 100%;
+  padding: 12px;
+  font-size: 1rem;
+  font-weight: bold;
+  background-color: #4f90d5;
+  color: #ffffff;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background-color 0.3s, transform 0.1s;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+}
+
+button:hover {
+  background-color: #4074a8;
+}
+
+button:active {
+  transform: scale(0.98); /* Subtle scale effect when clicked */
+}
+
+.toggle-message {
+  margin-top: 20px;
+  font-size: 1rem;
+  color: #cccccc;
+  text-align: center;
+}
+
+.toggle-button {
+  background: none;
+  border: none;
+  color: #4f90d5;
+  font-weight: bold;
+  cursor: pointer;
+  font-size: 1rem;
+  text-decoration: underline;
+  transition: color 0.3s;
+}
+
+.toggle-button:hover {
+  color: #4074a8;
+}
