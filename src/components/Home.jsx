@@ -31,29 +31,13 @@ const Home = () => {
       <Navbar className="navbar" isLoggedIn={isLoggedIn} handleLogout={handleLogout} />
       {/* Main Content */}
       <div className="home-main-content">
-      <img src="/shapes.png" alt="background shapes" className="background-image" />
+        <img src="/shapes.png" alt="background shapes" className="background-image" />
         <div className="form-container">
           {!isLoggedIn ? (
             isSignUp ? (
-              <>
-                <SignUp onSuccess={() => setIsLoggedIn(true)} />
-                <p className="toggle-message">
-                  Already have an account?{' '}
-                  <button className="toggle-button" onClick={toggleForm}>
-                    Log in
-                  </button>
-                </p>
-              </>
+              <SignUp onSuccess={() => setIsLoggedIn(true)} onSwitchToLogin={toggleForm} />
             ) : (
-              <>
-                <Login onSuccess={() => setIsLoggedIn(true)} />
-                <p className="toggle-message">
-                  Don't have an account?{' '}
-                  <button className="toggle-button" onClick={toggleForm}>
-                    Sign up
-                  </button>
-                </p>
-              </>
+              <Login onSuccess={() => setIsLoggedIn(true)} onSwitchToSignUp={toggleForm} />
             )
           ) : (
             <div className="welcome-container">

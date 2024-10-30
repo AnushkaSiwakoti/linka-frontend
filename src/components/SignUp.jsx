@@ -1,9 +1,7 @@
 import './SignUp.css';
 import React, { useState } from 'react';
-import Navbar from './Navbar';
 
-
-const SignUp = ({ onSuccess }) => {
+const SignUp = ({ onSuccess, onSwitchToLogin }) => {
   const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -12,7 +10,6 @@ const SignUp = ({ onSuccess }) => {
   const handleSubmit = async (event) => {
     event.preventDefault();
 
-    // Simple password match validation
     if (password !== confirmPassword) {
       alert('Passwords do not match');
       return;
@@ -34,10 +31,9 @@ const SignUp = ({ onSuccess }) => {
       const data = await response.json();
       if (response.ok) {
         alert(data.message);
-        // Set the user as logged in
         localStorage.setItem('username', username);
         if (onSuccess) {
-          onSuccess(); // Trigger onSuccess callback after successful signup
+          onSuccess(); 
         }
       } else {
         alert(data.error);
@@ -48,57 +44,66 @@ const SignUp = ({ onSuccess }) => {
   };
 
   return (
-    <div className="signup-container">
-      <form className="signup-form" onSubmit={handleSubmit}>
-        <h2>Sign Up</h2>
-        <div className="form-group">
-          <label htmlFor="username">Username</label>
-          <input
-            type="text"
-            id="username"
-            name="username"
-            value={username}
-            onChange={(e) => setUsername(e.target.value)}
-            required
-          />
-        </div>
-        <div className="form-group">
-          <label htmlFor="email">Email</label>
-          <input
-            type="email"
-            id="email"
-            name="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            required
-          />
-        </div>
-        <div className="form-group">
-          <label htmlFor="password">Password</label>
-          <input
-            type="password"
-            id="password"
-            name="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
-          />
-        </div>
-        <div className="form-group">
-          <label htmlFor="confirm-password">Confirm Password</label>
-          <input
-            type="password"
-            id="confirm-password"
-            name="confirmPassword"
-            value={confirmPassword}
-            onChange={(e) => setConfirmPassword(e.target.value)}
-            required
-          />
-        </div>
-        <button type="submit" className="signup-button">
-          Sign Up
-        </button>
-      </form>
+    <div className="form-wrapper">
+      <div className="signup-container">
+        <form className="signup-form" onSubmit={handleSubmit}>
+          <h2>Sign Up</h2>
+          <div className="form-group">
+            <label htmlFor="username">Username</label>
+            <input
+              type="text"
+              id="username"
+              name="username"
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+              required
+            />
+          </div>
+          <div className="form-group">
+            <label htmlFor="email">Email</label>
+            <input
+              type="email"
+              id="email"
+              name="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+            />
+          </div>
+          <div className="form-group">
+            <label htmlFor="password">Password</label>
+            <input
+              type="password"
+              id="password"
+              name="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+            />
+          </div>
+          <div className="form-group">
+            <label htmlFor="confirm-password">Confirm Password</label>
+            <input
+              type="password"
+              id="confirm-password"
+              name="confirmPassword"
+              value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value)}
+              required
+            />
+          </div>
+          <button type="submit" className="signup-button">
+            Sign Up
+          </button>
+          {/* Single instance of the toggle message */}
+          <div className="toggle-message">
+            Already have an account?{' '}
+            <button type="button" className="toggle-button" onClick={onSwitchToLogin}>
+              Log in
+            </button>
+          </div>
+        </form>
+      </div>
     </div>
   );
 };
