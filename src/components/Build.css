@@ -1,4 +1,4 @@
-/* General Styling */
+/* Main Layout */
 .build-page {
   position: relative;
   display: flex;
@@ -6,9 +6,12 @@
   min-height: 100vh;
   background-color: #000;
   color: #fff;
-  padding: 0 50px;
-  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  padding: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+
 }
+
 .background-image {
   position: fixed;
   top: 0;
@@ -21,7 +24,6 @@
   filter: brightness(0.9);
 }
 
-/* Dark Overlay */
 .build-page::before {
   content: '';
   position: fixed;
@@ -29,332 +31,557 @@
   left: 0;
   width: 100vw;
   height: 100vh;
-  background: rgba(0, 0, 0, 0.6); /* Black overlay with 60% opacity */
-  z-index: -1; /* Place it between the background image and the main content */
+  background: rgba(0, 0, 0, 0.6);
+  z-index: -1;
 }
 
-/* Main Content Styling */
 .build-content {
-  margin-top: 70px; /* Ensure the content doesn't overlap the navbar */
+  margin-top: 70px;
   padding: 20px;
   position: relative;
   z-index: 1;
   flex-grow: 1;
-  width: calc(100% - 40px); /* Ensure it doesn’t extend beyond the viewport */
+  width: 100%;
+  box-sizing: border-box;
+  overflow-y: auto;
+
 }
 
-/* Main Content Styling */
-.main-container {
-  flex-grow: 1;
-  margin-left: 250px; /* Matches the sidebar width when expanded */
-  padding: 40px;
-  background-color: #222;
-  border-radius: 10px;
-  max-width: 1000px;
-  margin: 40px auto;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.5);
-  transition: margin-left 0.3s;
-}
-
-.logout-button {
-  color: #ffffff;
-  margin-left: 20px;
-  text-decoration: none;
-}
-
-/* Sidebar Styling */
+/* Sidebar Styles */
 .sidebar {
   position: fixed;
-  top: 60px;
+  top: 70px;
   left: 0;
-  bottom: 0;
-  width: 250px;
+  height: calc(100vh - 70px);
   background-color: #1a1a1a;
-  color: #fff;
-  border-right: 2px solid #007bff;
-  padding: 15px;
-  box-sizing: border-box;
-  transition: width 0.3s;
-  font-size: 14px;
+  transition: width 0.3s ease;
+  z-index: 100;
+  box-shadow: 2px 0 5px rgba(0, 0, 0, 0.3);
   display: flex;
   flex-direction: column;
-  align-items: center;
-  overflow-x: hidden;
-  box-shadow: 2px 0 5px rgba(0, 0, 0, 0.5);
-  z-index: 1000;
-}
-
-.sidebar.collapsed {
-  width: 50px;
+  width: 250px;
+  overflow: hidden;
 }
 
 .sidebar.expanded {
   width: 250px;
 }
 
-.toggle-btn {
-  background: none;
-  border: none;
-  font-size: 20px;
-  cursor: pointer;
-  color: #fff;
+.sidebar.collapsed {
+  width: 50px;
 }
 
 .sidebar-content {
-  margin-top: 20px;
+  padding: 10px;
+  flex-grow: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  scrollbar-width: thin;
+  scrollbar-color: #444 #1a1a1a;
+}
+
+.sidebar-content::-webkit-scrollbar {
+  width: 8px;
+}
+
+.sidebar-content::-webkit-scrollbar-track {
+  background: #1a1a1a;
+}
+
+.sidebar-content::-webkit-scrollbar-thumb {
+  background-color: #444;
+  border-radius: 4px;
+}
+
+.sidebar-content::-webkit-scrollbar-thumb:hover {
+  background-color: #555;
+}
+
+.toggle-btn {
+  width: 100%;
+  padding: 10px;
+  border: none;
+  background: #333;
+  color: white;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.toggle-btn:hover {
+  background: #444;
 }
 
 .sidebar-button {
+  width: 100%;
+  padding: 12px;
+  margin-bottom: 8px;
+  background: #333;
+  border: none;
+  color: white;
+  cursor: pointer;
+  border-radius: 4px;
   display: flex;
   align-items: center;
-  justify-content: center;
-  background: none;
-  border: none;
-  font-size: 16px;
-  cursor: pointer;
-  margin-bottom: 10px;
-  color: #ffffff;
-  width: 100%;
-  padding: 10px;
-  transition: background-color 0.3s ease;
+  gap: 10px;
+  transition: background-color 0.2s;
 }
 
 .sidebar-button:hover {
-  background-color: #333;
+  background: #444;
 }
 
 .sidebar-label {
-  margin-left: 10px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
-.sidebar.collapsed .icon {
-  justify-content: center;
+/* Main Container */
+.main-container {
+  margin-left: 250px;
+  transition: margin-left 0.3s ease;
+  padding: 20px;
+  min-height: 100vh; 
+  height: auto; 
+  max-width: calc(100vw - 270px);
+  overflow-y: auto; 
+  align-items: stretch;
 }
 
-.sidebar .icon {
-  font-size: 2rem;
-  color: #fff;
-}
-
-.sidebar button span {
-  display: none;
-  margin-left: 10px;
-}
-
-.sidebar.expanded button span {
-  display: inline;
-}
 
 .main-container.sidebar-collapsed {
   margin-left: 50px;
+  max-width: calc(100vw - 70px);
 }
 
-.sidebar.expanded ~ .main-container {
-  margin-left: 250px;
+/* Chart and Component Containers */
+.chart-and-table-container {
+  position: relative;
+  width: 100%;
+  min-height: auto;
+  height: auto;
+  padding-bottom: 20px;
 }
 
-/* Upload Container Styling */
-.upload-container {
+.draggable-component {
+  position: absolute;
+  min-height: 150px;
+  height: auto;
+  width: 600px;
+  resize: both;
+  overflow: visible;
+  background-color: #1a1a1a;
+  border: 2px solid #333;
+  border-radius: 8px;
+  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+}
+
+.draggable-component.active {
+  border-color: #007bff;
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.4);
+  transform: translateY(-2px);
+}
+
+.chart-container {
+  min-height: 300px;
+  height: auto;
   display: flex;
   flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  height: calc(100vh - 60px);
-  text-align: center;
-  background-color: #1a1a1a;
-  border: 2px solid #007bff;
-  border-radius: 8px;
-  padding: 40px;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.5);
-  margin-top: 20px;
+  gap: 10px;
+  transition: all 0.3s ease;
 }
 
-.upload-btn-container {
-  margin-top: 20px;
+.chart-wrapper {
+  flex-grow: 1;
+  min-height: 200px;
+  height: auto;
+  background-color: #1a1a1a;
+  padding: 15px;
+  border-radius: 4px;
+  transition: all 0.3s ease;
+}
+
+.chart-title {
+  margin: 0;
+  padding: 10px;
+  font-size: 16px;
+  text-align: center;
+  background-color: #333;
+  border-radius: 4px;
+  color: #fff;
+  transition: background-color 0.2s ease;
+}
+
+.chart-title:hover {
+  background-color: #444;
+}
+
+/* Filter Controls */
+.filter-controls {
+  padding: 15px;
+  background-color: #1a1a1a;
+  border-radius: 4px;
+  border: 1px solid #333;
+  transition: all 0.2s ease;
+}
+
+.filter-controls:hover {
+  border-color: #007bff;
+}
+
+.filter-label {
+  color: #fff;
+  margin-bottom: 10px;
+  font-size: 14px;
+}
+
+.filter-values {
+  display: flex;
+  justify-content: space-between;
+  color: #fff;
+  margin-top: 8px;
+  font-size: 12px;
+}
+
+/* Range Input Styling */
+input[type="range"] {
+  width: 100%;
+  height: 8px;
+  border-radius: 4px;
+  background: #333;
+  outline: none;
+  -webkit-appearance: none;
+}
+
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #007bff;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+input[type="range"]::-webkit-slider-thumb:hover {
+  background: #0056b3;
+  transform: scale(1.1);
+}
+
+/* Upload Container */
+.upload-container {
+  max-width: 600px;
+  margin: 40px auto;
+  padding: 40px;
+  background-color: #1a1a1a;
+  border-radius: 8px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  text-align: center;
+}
+
+.file-input {
+  margin: 20px 0;
+  padding: 10px;
+  border: 2px dashed #333;
+  border-radius: 4px;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .upload-btn {
-  background-color: #4d7fb4;
+  padding: 12px 24px;
+  background-color: #007bff;
   color: white;
-  padding: 10px 20px;
-  border-radius: 5px;
+  border: none;
+  border-radius: 4px;
   cursor: pointer;
-  font-size: 1rem;
-  font-weight: bold;
-  min-width: 150px;
-  max-width: 250px;
-  text-align: center;
+  transition: background-color 0.2s;
 }
 
 .upload-btn:hover {
   background-color: #0056b3;
 }
 
-.file-input {
-  margin-top: 10px;
+.upload-btn:disabled {
+  background-color: #666;
+  cursor: not-allowed;
 }
 
-.chart-and-table-container {
-  position: relative;
-  width: 100%;
-  padding: 20px;
-  box-sizing: border-box;
-  background-color: #1a1a1a;
-  border-radius: 8px;
-  min-height: 1200px; /* Increased the minimum height to accommodate multiple charts */
-  overflow: hidden; /* Prevent overflowing elements */
-}
-
-.chart-and-table-container > .table-draggable,
-.chart-and-table-container > .chart-box-small {
-  background-color: #222; /* To ensure it stands out from the background */
-  border: 2px solid #333;
-  width: 100%;
-  min-height: 1500px; /* Increased from 1000px to 1500px for more room initially */
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.5);
-  overflow: auto; /* Allow scrolling if content exceeds container size */
-  padding: 10px; /* Added padding for better layout */
-  resize: both; /* Allow manual resizing */
-  position: relative;
-
-}
-
-/* Table Styling */
+/* Table Styles */
 .table-section {
-  width: 100%;
-  overflow-x: hidden;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
 }
 
-/* Updated Table Styling */
+.table-container {
+  flex-grow: 1;
+  overflow: auto;
+}
+
 .data-table {
   width: 100%;
-  table-layout: auto; /* Changed from fixed to auto for better distribution */
-  background-color: #1a1a1a;
   border-collapse: collapse;
-  word-wrap: break-word; /* Added to handle long text more gracefully */
+  background-color: #1a1a1a;
 }
 
-.data-table th, .data-table td {
-  padding: 12px; /* Increased padding for better spacing */
-  border: 1px solid #fff;
+.data-table th,
+.data-table td {
+  padding: 8px 12px;
   text-align: left;
-  color: #fff;
+  border: 1px solid #333;
 }
 
 .data-table th {
-  background-color: #333;
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  cursor: pointer;
+  background-color: #1a1a1a;
 }
 
-.data-table td {
-  background-color: #444;
+.data-table tr:nth-child(even) {
+  background-color: #222;
 }
 
-/* Pagination and Resize Controls */
+.sortable-header {
+  position: relative;
+  padding-right: 25px;
+}
+
+.sort-indicator {
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+/* Pagination Controls */
 .pagination-controls {
   display: flex;
+  justify-content: center;
   align-items: center;
-  justify-content: space-between;
-  margin: 20px 0;
+  gap: 20px;
+  padding: 10px;
+  background-color: #1a1a1a;
+  border-radius: 4px;
 }
 
 .pagination-controls button {
-  background-color: #274463;
-  color: white;
-  padding: 10px;
-  border-radius: 5px;
-  cursor: pointer;
+  padding: 6px 12px;
+  background-color: #333;
   border: none;
+  border-radius: 4px;
+  color: white;
+  cursor: pointer;
+  transition: background-color 0.2s;
 }
 
-.pagination-controls select {
-  padding: 5px;
+.pagination-controls button:hover:not(:disabled) {
+  background-color: #444;
 }
 
-.pagination-controls span {
-  margin: 0 10px;
+.pagination-controls button:disabled {
+  background-color: #222;
+  cursor: not-allowed;
 }
 
-/* Table Resize Controls */
-.table-resize-controls {
+/* Chart Options Panel */
+.chart-options-panel {
+  padding: 15px;
+  background-color: #1a1a1a;
+  border-radius: 4px;
+  margin-bottom: 10px;
+  border: 1px solid #333;
+  transition: all 0.2s ease;
+}
+
+.chart-options-panel:hover {
+  border-color: #007bff;
+}
+
+.option-group {
+  margin-bottom: 12px;
+}
+
+.option-checkbox {
   display: flex;
   align-items: center;
+  gap: 8px;
+  color: #fff;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.option-checkbox input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  cursor: pointer;
+  position: relative;
+  margin-right: 8px;
+  transition: all 0.2s ease;
+}
+
+.option-checkbox input[type="checkbox"]:checked {
+  background-color: #007bff;
+  border-color: #007bff;
+}
+
+.option-select {
+  width: 100%;
+  padding: 8px;
+  margin-top: 8px;
+  background-color: #333;
+  border: 1px solid #444;
+  color: white;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.option-select:hover {
+  border-color: #007bff;
+}
+
+/* Messages */
+.error-message {
+  color: #ff4d4f;
   margin-top: 10px;
 }
 
-.chart-box-title {
-  font-size: 18px;
-  margin-bottom: 10px;
-  color: #007bff;
-}
-
-/* Drag and Drop Styling */
-.draggable {
-  cursor: move;
-}
-
-/* Add New Charts and Tables Styling */
-.chart-and-table-container:empty::after {
-  content: 'Add charts and tables here';
-  display: block;
-  color: #aaa;
-  text-align: center;
-  font-size: 18px;
-  padding: 40px 0;
-}
-
-/* Error and Loading Styling */
-.error-message {
-  color: red;
-}
-
 .loading-message {
-  color: white;
-  text-align: center;
+  color: #fff;
+  margin-top: 10px;
 }
 
-.slider-controls {
+/* Table Filters */
+.table-filters {
+  background-color: #1a1a1a;
+  border-radius: 4px;
+  padding: 15px;
+  margin-bottom: 10px;
+  border: 1px solid #333;
+  transition: all 0.2s ease;
+}
+
+.table-filters:hover {
+  border-color: #007bff;
+}
+
+.filter-group {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 10px;
+  flex-wrap: wrap;
+  transition: all 0.2s ease;
+}
+
+.filter-input {
+  background-color: #333;
+  border: 1px solid #444;
+  color: white;
+  padding: 8px;
+  border-radius: 4px;
+  min-width: 120px;
+  transition: all 0.2s ease;
+}
+
+.filter-input:focus {
+  border-color: #007bff;
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.2);
+}
+
+.filter-tag {
+  background-color: #333;
+  color: white;
+  padding: 6px 12px;
+  border-radius: 4px;
   display: flex;
   align-items: center;
-  gap: 10px;
-  color: #fff;
+  gap: 8px;
+  transition: all 0.2s ease;
 }
 
-.slider-controls input[type="range"] {
-  margin: 0 10px;
+.filter-tag:hover {
+  background-color: #444;
 }
 
-.resizable-draggable-container {
-  margin-bottom: 20px; /* Add spacing between charts and tables to avoid overlap */
+/* Drag Handle */
+.drag-handle {
+  height: 30px;
+  background: #333;
+  cursor: move;
+  display: flex;
+  align-items: center;
+  padding: 0 10px;
+  justify-content: space-between;
+  transition: background-color 0.2s ease;
 }
 
-/* Specific styles for when components are resized */
-.react-resizable {
-  border: 2px dashed #007bff50; /* Highlight the boundary of the resizable box for better visual clarity */
+.drag-handle:hover {
+  background-color: #444;
 }
 
-.react-resizable-handle {
-  background-color: #0d192500; /* Handle for resizing */
-  width: 10px;
-  height: 10px;
+/* Animation for chart updates */
+@keyframes chartUpdate {
+  0% { opacity: 0.7; }
+  100% { opacity: 1; }
 }
 
-.chart-box-small {
+.chart-wrapper canvas {
+  animation: chartUpdate 0.3s ease;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .main-container {
+    margin-left: 50px !important;
+    max-width: calc(100vw - 70px);
+  }
+
+  .sidebar.expanded {
+    width: 200px;
+  }
+
+  .draggable-component {
+    width: 90%;
+  }
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #1a1a1a;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #444;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #555;
+}
+
+/* Utility Classes */
+.position-relative {
   position: relative;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
-  border-radius: 8px;
+}
+
+.overflow-hidden {
   overflow: hidden;
 }
 
-.delete-button {
-  background: none;
-  border: none;
-  color: #ff4d4f;
-  right: 10px; /* Anchored to the top-right corner */
-  font-size: 20px;
-  cursor: pointer;
-  z-index: 10;
+.w-full {
+  width: 100%;
 }
 
-.delete-button:hover {
-  color: #ff7875;
+.h-full {
+  height: 100%;
 }

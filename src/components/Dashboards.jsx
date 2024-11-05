@@ -1,12 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
 import './Dashboards.css';
 import Navbar from './Navbar';
 import Footer from './Footer';
 
 const Dashboards = () => {
   const [isLoggedIn, setIsLoggedIn] = useState(true);
-  const navigate = useNavigate();
 
   useEffect(() => {
     const loggedInUser = localStorage.getItem('username');
