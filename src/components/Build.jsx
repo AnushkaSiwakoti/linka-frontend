@@ -280,6 +280,70 @@ const Build = () => {
     parseCSV(selectedFile);
   };
 
+
+// Modified save function
+const saveDashboard = () => {
+  // Get CSRF token from cookie
+  const csrfToken = document.cookie
+  .split('; ')
+  .find(row => row.startsWith('csrftoken='))
+  ?.split('=')[1];
+
+  const dashboardData = {
+    name: 'My Dashboard',
+    state: {
+        charts,
+        filterRanges,
+        pageIndex,
+        showTable,
+        columns,
+        data,
+        tableFilters,
+        chartOptions,
+        classification,
+    },
+};
+
+
+const jsonData = JSON.stringify(dashboardData);
+const contentLength = new Blob([jsonData]).size;
+
+const url = new URL(process.env.REACT_APP_API_BASE_URL);
+const hostHeader = url.hostname;
+const sessionId = localStorage.getItem('sessionId');
+      if (!sessionId) {
+        throw new Error('No session ID found');
+      }
+  
+  fetch(`${process.env.REACT_APP_API_BASE_URL}/dashboards/save/`, {
+    
+      method: 'POST',
+      headers: {
+          'Content-Type': 'application/json',
+          'Accept': '*/*',           // Added to match Postman
+          'Cache-Control': 'no-cache', // Added to match Postman
+          'Cookie': `sessionid=${sessionId}`,
+          'Content-Length': contentLength.toString(),
+          'Accept-Encoding': 'gzip, deflate, br',
+          'Host': hostHeader, // Added Host header
+      },
+      body: jsonData,
+      credentials: 'include',  // Important! This ensures cookies are sent
+  })
+  .then(response => {
+      if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      return response.json();
+  })
+  .then(data => {
+      alert('Dashboard saved successfully!');
+  })
+  .catch(error => {
+      console.error('Error:', error);
+      alert(error);
+  });
+};
   // Chart generation
   const handleShowBarChart = (chartType) => {
     if (charts.some((chart) => chart.type === 'bar' && chart.chartType === chartType)) {
@@ -527,6 +591,14 @@ const Build = () => {
                   </span>
                 </button>
               )}
+              <button 
+                className="sidebar-button" 
+                onClick={saveDashboard}
+              >
+                💾 <span className="sidebar-label">
+                  {isSidebarExpanded && 'Save Dashboard'}
+                </span>
+              </button>
             </div>
           </div>
         )}
