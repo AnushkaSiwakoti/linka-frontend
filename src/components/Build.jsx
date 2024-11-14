@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import Papa from 'papaparse';
 import { Bar, Pie, Line } from 'react-chartjs-2';
+import { useLocation } from 'react-router-dom';
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -49,6 +50,7 @@ const chartColors = [
   'rgba(255, 99, 255, 0.8)',   // pink
   'rgba(159, 159, 64, 0.8)',   // olive
 ];
+
 
 // Data filtering function
 const getFilteredData = (data, filters) => {
@@ -281,17 +283,15 @@ const Build = () => {
   };
 
 
-// Modified save function
-const saveDashboard = () => {
-  // Get CSRF token from cookie
-  const csrfToken = document.cookie
-  .split('; ')
-  .find(row => row.startsWith('csrftoken='))
-  ?.split('=')[1];
+const [dashboardName, setDashboardName] = useState(''); // State for the dashboard name
 
-  const dashboardData = {
-    name: 'My Dashboard',
-    state: {
+// Modified save function with conflict resolution
+const saveDashboard = async () => {
+  try {
+    // Create dashboard data object
+    const dashboardData = {
+      name: dashboardName, // Use the user-provided dashboard name
+      state: {
         charts,
         filterRanges,
         pageIndex,
@@ -301,117 +301,171 @@ const saveDashboard = () => {
         tableFilters,
         chartOptions,
         classification,
-    },
-};
-
-
-const jsonData = JSON.stringify(dashboardData);
-const contentLength = new Blob([jsonData]).size;
-
-const url = new URL(process.env.REACT_APP_API_BASE_URL);
-const hostHeader = url.hostname;
-const sessionId = localStorage.getItem('sessionId');
-      if (!sessionId) {
-        throw new Error('No session ID found');
-      }
-  
-  fetch(`${process.env.REACT_APP_API_BASE_URL}/dashboards/save/`, {
-    
-      method: 'POST',
-      headers: {
-          'Content-Type': 'application/json',
-          'Accept': '*/*',           // Added to match Postman
-          'Cache-Control': 'no-cache', // Added to match Postman
-          'Cookie': `sessionid=${sessionId}`,
-          'Content-Length': contentLength.toString(),
-          'Accept-Encoding': 'gzip, deflate, br',
-          'Host': hostHeader, // Added Host header
       },
-      body: jsonData,
-      credentials: 'include',  // Important! This ensures cookies are sent
-  })
-  .then(response => {
-      if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
-      }
-      return response.json();
-  })
-  .then(data => {
-      alert('Dashboard saved successfully!');
-  })
-  .catch(error => {
-      console.error('Error:', error);
-      alert(error);
-  });
-};
-  // Chart generation
-  const handleShowBarChart = (chartType) => {
-    if (charts.some((chart) => chart.type === 'bar' && chart.chartType === chartType)) {
+    };
+    if (!dashboardName) {
+      alert('Please enter a name for the dashboard before saving.');
       return;
     }
 
-    const processedData = processChartData(chartType, chartOptions);
+    // Convert dashboard data to JSON string
+    const jsonData = JSON.stringify(dashboardData);
+    const contentLength = new Blob([jsonData]).size;
     
-    const barChartData = {
-      labels: processedData.map((row) => row[classification.categoricalColumns[0]] || 'Unknown'),
-      datasets: [
-        {
-          label: chartType,
-          data: processedData.map((row) => parseFloat(row[chartType]) || 0),
-          backgroundColor: chartColors[0],
-          borderColor: chartColors[0].replace('0.8', '1'),
-          borderWidth: 1,
-        },
-        ...(chartOptions.showPercentageChange ? [{
-          label: `${chartType} % Change`,
-          data: processedData.map((row) => row[`${chartType}_pct_change`] || 0),
-          type: 'line',
-          borderColor: chartColors[1],
-          borderWidth: 2,
-          fill: false,
-        }] : []),
-        ...(chartOptions.showYOYChange ? [{
-          label: `${chartType} YoY Change`,
-          data: processedData.map((row) => row[`${chartType}_yoy_change`] || 0),
-          type: 'line',
-          borderColor: chartColors[2],
-          borderWidth: 2,
-          fill: false,
-        }] : []),
-        ...(chartOptions.showMovingAverage ? [{
-          label: `${chartType} ${chartOptions.movingAveragePeriod} Period MA`,
-          data: processedData.map((row) => 
-            row[`${chartType}_ma${chartOptions.movingAveragePeriod}`] || 0
-          ),
-          type: 'line',
-          borderColor: chartColors[3],
-          borderWidth: 2,
-          fill: false,
-        }] : []),
-        ...(chartOptions.showGrowthRate ? [{
-          label: `${chartType} Growth Rate`,
-          data: processedData.map((row) => row[`${chartType}_growth_rate`] || 0),
-          type: 'line',
-          borderColor: chartColors[4],
-          borderWidth: 2,
-          fill: false,
-        }] : []),
-        ...(chartOptions.showCumulativeSum ? [{
-          label: `${chartType} Cumulative Sum`,
-          data: processedData.map((row) => row[`${chartType}_cumsum`] || 0),
-          type: 'line',
-          borderColor: chartColors[5],
-          borderWidth: 2,
-          fill: false,
-        }] : []),
-      ],
-    };
 
-    setCharts((prevCharts) => [
-      ...prevCharts,
-      { type: 'bar', chartType, data: barChartData, options: barChartOptions },
-    ]);
+    // Make API call to save the dashboard
+    const response = await fetch(`${process.env.REACT_APP_API_BASE_URL}/dashboards/save/`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Content-Length': contentLength, // Adding content length to the headers
+      },
+      credentials: 'include', // Crucial for sending and receiving cookies
+      body: jsonData,
+    });
+
+    // Handle response
+    if (!response.ok) {
+      const errorMessage = await response.text();
+      throw new Error(`Failed to save dashboard: ${errorMessage}`);
+    }
+
+    const responseData = await response.json(); // renamed variable
+    alert('Dashboard saved successfully!');
+  } catch (error) {
+    console.error('Error:', error);
+    alert(`Error saving dashboard: ${error.message}`);
+  }
+};
+
+ // Modified Chart Generation
+const handleShowBarChart = (chartType) => {
+  if (charts.some((chart) => chart.type === 'bar' && chart.chartType === chartType)) {
+    return;
+  }
+
+  const processedData = processChartData(chartType, chartOptions);
+  
+  const barChartData = {
+    labels: processedData.map((row) => row[classification.categoricalColumns[0]] || 'Unknown'),
+    datasets: [
+      {
+        label: chartType,
+        data: processedData.map((row) => parseFloat(row[chartType]) || 0),
+        backgroundColor: chartColors[0],
+        borderColor: chartColors[0].replace('0.8', '1'),
+        borderWidth: 1,
+        barThickness: 40,  // Makes bars thicker for better visibility
+        maxBarThickness: 60, // Ensures bars can expand but not excessively
+      },
+      ...(chartOptions.showPercentageChange ? [{
+        label: `${chartType} % Change`,
+        data: processedData.map((row) => row[`${chartType}_pct_change`] || 0),
+        type: 'line',
+        borderColor: chartColors[1],
+        borderWidth: 2,
+        fill: false,
+      }] : []),
+      ...(chartOptions.showYOYChange ? [{
+        label: `${chartType} YoY Change`,
+        data: processedData.map((row) => row[`${chartType}_yoy_change`] || 0),
+        type: 'line',
+        borderColor: chartColors[2],
+        borderWidth: 2,
+        fill: false,
+      }] : []),
+      ...(chartOptions.showMovingAverage ? [{
+        label: `${chartType} ${chartOptions.movingAveragePeriod} Period MA`,
+        data: processedData.map((row) => 
+          row[`${chartType}_ma${chartOptions.movingAveragePeriod}`] || 0
+        ),
+        type: 'line',
+        borderColor: chartColors[3],
+        borderWidth: 2,
+        fill: false,
+      }] : []),
+      ...(chartOptions.showGrowthRate ? [{
+        label: `${chartType} Growth Rate`,
+        data: processedData.map((row) => row[`${chartType}_growth_rate`] || 0),
+        type: 'line',
+        borderColor: chartColors[4],
+        borderWidth: 2,
+        fill: false,
+      }] : []),
+      ...(chartOptions.showCumulativeSum ? [{
+        label: `${chartType} Cumulative Sum`,
+        data: processedData.map((row) => row[`${chartType}_cumsum`] || 0),
+        type: 'line',
+        borderColor: chartColors[5],
+        borderWidth: 2,
+        fill: false,
+      }] : []),
+    ],
   };
+
+  const enhancedBarChartOptions = {
+    ...barChartOptions,
+    layout: {
+      padding: {
+        top: 20,
+        bottom: 20,
+      },
+    },
+    scales: {
+      x: {
+        ...barChartOptions.scales.x,
+        title: {
+          display: true,
+          text: 'Categories',
+          color: '#fff',
+          font: {
+            size: 12,
+            weight: 'bold'
+          }
+        },
+        ticks: {
+          font: {
+            size: 10, // Smaller font size for category names to fit better
+          },
+          maxRotation: 45,
+          minRotation: 45,
+        },
+      },
+      y: {
+        ...barChartOptions.scales.y,
+        title: {
+          display: true,
+          text: chartType,
+          color: '#fff',
+          font: {
+            size: 16,
+            weight: 'bold'
+          }
+        },
+        beginAtZero: true, // Starts Y-axis from zero for better clarity
+        max: Math.max(...processedData.map((row) => parseFloat(row[chartType]) || 0)) * 1.2, // Adds vertical space to make the chart bigger
+      },
+    },
+    plugins: {
+      ...barChartOptions.plugins,
+      tooltip: {
+        mode: 'index',
+        intersect: false, // Makes tooltips easier to see by activating them for all elements at that index
+      },
+      legend: {
+        ...barChartOptions.plugins.legend,
+        position: 'bottom',
+      },
+    },
+    maintainAspectRatio: false, // Makes the chart larger within its container
+    responsive: true,
+  };
+
+  setCharts((prevCharts) => [
+    ...prevCharts,
+    { type: 'bar', chartType, data: barChartData, options: enhancedBarChartOptions },
+  ]);
+};
 
   const handleShowLineChart = (chartType) => {
     if (charts.some((chart) => chart.type === 'line' && chart.chartType === chartType)) {
@@ -435,9 +489,15 @@ const sessionId = localStorage.getItem('sessionId');
       ],
     };
 
+    const enhancedLineChartOptions = {
+      ...lineChartOptions,
+      maintainAspectRatio: false,
+      responsive: true,
+    };
+
     setCharts((prevCharts) => [
       ...prevCharts,
-      { type: 'line', chartType, data: lineChartData, options: lineChartOptions },
+      { type: 'line', chartType, data: lineChartData, options: enhancedLineChartOptions },
     ]);
   };
 
@@ -467,11 +527,26 @@ const sessionId = localStorage.getItem('sessionId');
       ],
     };
 
+    const enhancedPieChartOptions = {
+      ...commonChartOptions,
+      maintainAspectRatio: false,
+      responsive: true,
+      plugins: {
+        ...commonChartOptions.plugins,
+        title: { 
+          display: true, 
+          text: 'Distribution',
+          color: '#fff'
+        }
+      }
+    };
+
     setCharts((prevCharts) => [
       ...prevCharts,
-      { type: 'pie', chartType: 'Category Distribution', data: pieChartData },
+      { type: 'pie', chartType: 'Category Distribution', data: pieChartData, options: enhancedPieChartOptions },
     ]);
   };
+
   const handleFilterRangeChange = (chartType, values) => {
     setFilterRanges(prev => ({ ...prev, [chartType]: values }));
     
@@ -535,6 +610,7 @@ const sessionId = localStorage.getItem('sessionId');
 
         {fileUploaded && (
           <div className={`sidebar ${isSidebarExpanded ? 'expanded' : 'collapsed'}`}>
+
             <button 
               className="toggle-btn" 
               onClick={() => setIsSidebarExpanded(!isSidebarExpanded)}
@@ -542,6 +618,15 @@ const sessionId = localStorage.getItem('sessionId');
               {isSidebarExpanded ? '⬅' : '➡'}
             </button>
             <div className="sidebar-content">
+            <div className="dashboard-name-input">
+              <input
+                type="text"
+                value={dashboardName}
+                onChange={(e) => setDashboardName(e.target.value)}
+                placeholder="Enter Dashboard Name"
+                className="dashboard-name-field"
+              />
+            </div>
               <button 
                 className="sidebar-button" 
                 onClick={() => window.location.reload()}
@@ -725,6 +810,7 @@ const sessionId = localStorage.getItem('sessionId');
                   onActivate={() => setActiveComponentId(`chart-${index}`)}
                   onDelete={() => handleDeleteComponent('chart', index)}
                   defaultPosition={{ x: 50 + (index * 30), y: 50 + (index * 30) }}
+                  defaultSize={{ width: 700, height: 800 }} // Ensure charts expand vertically with the container
                 >
                   <div className="chart-container">
                     <h2 className="chart-title">{chart.chartType}</h2>
@@ -745,27 +831,17 @@ const sessionId = localStorage.getItem('sessionId');
                       }}
                     />
 
-                    <div className="chart-wrapper">
+                    <div className="chart-wrapper" style={{ height: '100%' }}> {/* Ensure charts expand vertically */}
                       {chart.type === 'bar' && (
-                        <Bar data={chart.data} options={barChartOptions} />
+                        <Bar data={chart.data} options={chart.options} />
                       )}
                       {chart.type === 'line' && (
-                        <Line data={chart.data} options={lineChartOptions} />
+                        <Line data={chart.data} options={chart.options} />
                       )}
                       {chart.type === 'pie' && (
                         <Pie
                           data={chart.data}
-                          options={{
-                            ...commonChartOptions,
-                            plugins: {
-                              ...commonChartOptions.plugins,
-                              title: { 
-                                display: true, 
-                                text: 'Distribution',
-                                color: '#fff'
-                              }
-                            }
-                          }}
+                          options={chart.options}
                         />
                       )}
                     </div>
