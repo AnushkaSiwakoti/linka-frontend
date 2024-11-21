@@ -12,6 +12,7 @@
     "d3": "^7.9.0",
     "date-fns": "^4.1.0",
     "jwt-decode": "^4.0.0",
+    "lucide-react": "^0.460.0",
     "papaparse": "^5.4.1",
     "rc-slider": "^11.1.7",
     "react": "^18.3.1",
@@ -53,6 +54,7 @@
   },
   "devDependencies": {
     "@babel/plugin-proposal-class-properties": "^7.18.6",
+    "@babel/plugin-proposal-optional-chaining": "^7.21.0",
     "@babel/plugin-proposal-private-property-in-object": "^7.21.11"
   }
 }
