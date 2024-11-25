@@ -34,7 +34,6 @@
   background: rgba(0, 0, 0, 0.6); /* Black overlay with 60% opacity */
   z-index: -1; /* Place it between the background image and the main content */
 }
-
 /* Main content area */
 .dashboard-main-content {
   margin-top: 40px; /* Adds space below the Navbar */
@@ -85,7 +84,6 @@
   color: #4f90d5;
   margin-bottom: 15px;
 }
-
 /* Dashboard preview text */
 .dashboard-preview {
   font-size: 1rem;
@@ -103,15 +101,66 @@
   bottom: 0;
   width: 100%;
 }
-
 /* Scroll and container adjustments for responsiveness */
 @media (max-width: 768px) {
   .dashboard-list {
     flex-direction: column;
     gap: 15px;
   }
-
   .main-content {
     padding: 20px;
+  }
+}
+
+
+
+/* Existing CSS remains the same, replace .dashboard-list with: */
+.dashboard-grid {
+  display: flex;
+  gap: 20px;
+  overflow-x: auto;
+  padding-bottom: 20px;
+  width: 100%;
+  align-items: stretch;
+}
+
+.dashboard-card {
+  background-color: #2b2b2b;
+  border: 1px solid #4f90d5;
+  border-radius: 10px;
+  min-width: 320px;
+  width: 320px;
+  padding: 20px;
+  text-align: center;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+  transition: background-color 0.3s, transform 0.2s;
+  display: flex;
+  flex-direction: column;
+}
+
+.dashboard-actions {
+  margin-top: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.dashboard-actions button {
+  padding: 12px;
+  border-radius: 8px;
+}
+
+.delete-confirmation {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .dashboard-grid {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch; /* Smooth scrolling on iOS */
   }
 }

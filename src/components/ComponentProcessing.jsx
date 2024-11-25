@@ -327,6 +327,7 @@ export const DraggableComponent = ({
   const [isResizing, setIsResizing] = useState(false);
   const componentRef = useRef(null);
   const dragStartPos = useRef({ x: 0, y: 0 });
+  const resizeStartPos = useRef({ x: 0, y: 0 });
   const resizeStartSize = useRef({ width: 0, height: 0 });
 
   const handleMouseDown = (e) => {
@@ -339,6 +340,7 @@ export const DraggableComponent = ({
   };
 
   const startDrag = (e) => {
+    e.preventDefault();
     setIsDragging(true);
     dragStartPos.current = {
       x: e.clientX - position.x,
@@ -350,12 +352,15 @@ export const DraggableComponent = ({
   };
 
   const startResize = (e) => {
+    e.preventDefault();
     setIsResizing(true);
-    resizeStartSize.current = {
-      width: size.width,
-      height: size.height,
+    resizeStartPos.current = {
       x: e.clientX,
       y: e.clientY
+    };
+    resizeStartSize.current = {
+      width: size.width,
+      height: size.height
     };
     if (componentRef.current) {
       componentRef.current.style.transition = 'none';
@@ -370,27 +375,29 @@ export const DraggableComponent = ({
       };
       setPosition(newPosition);
     } else if (isResizing) {
-      const deltaWidth = e.clientX - resizeStartSize.current.x;
-      const deltaHeight = e.clientY - resizeStartSize.current.y;
+      const deltaX = e.clientX - resizeStartPos.current.x;
+      const deltaY = e.clientY - resizeStartPos.current.y;
       
-      const newWidth = Math.max(300, resizeStartSize.current.width + deltaWidth);
-      const newHeight = Math.max(200, resizeStartSize.current.height + deltaHeight);
+      const newWidth = Math.max(300, resizeStartSize.current.width + deltaX);
+      const newHeight = Math.max(200, resizeStartSize.current.height + deltaY);
       
-      setSize({ width: newWidth, height: newHeight });
-      onResize?.({ width: newWidth, height: newHeight });
+      setSize({
+        width: newWidth,
+        height: newHeight
+      });
     }
-  }, [isDragging, isResizing, onResize]);
+  }, [isDragging, isResizing]);
 
   const handleMouseUp = useCallback(() => {
     if (isDragging) {
+      setIsDragging(false);
       onDragStop?.(null, position);
     }
     if (isResizing) {
+      setIsResizing(false);
       onResize?.(size);
     }
     
-    setIsDragging(false);
-    setIsResizing(false);
     if (componentRef.current) {
       componentRef.current.style.transition = 'transform 0.2s ease';
     }
@@ -410,34 +417,47 @@ export const DraggableComponent = ({
   return (
     <div
       ref={componentRef}
-      className={`draggable-component ${isActive ? 'active' : ''}`}
+      className={`relative bg-white rounded-lg shadow-lg border ${isActive ? 'border-blue-500' : 'border-gray-200'}`}
       style={{
         position: 'absolute',
         left: position.x,
         top: position.y,
+        // width: `${size.width}px`,
+        // height: `${size.height}px`,
         width: size.width,
         height: size.height,
-        transform: `translate(${position.x}px, ${position.y}px)`
+        transform: `translate(${position.x}px, ${position.y}px)`,
+        transition: 'transform 0.2s ease'
       }}
     >
-      <div className="drag-handle" onMouseDown={handleMouseDown}>
-        <div className="component-header">
-          <h3>{children.props.title}</h3>
-          <div className="component-controls">
-            <button onClick={onDelete} className="delete-btn" title="Delete component">
-              <X size={16} />
-            </button>
-          </div>
-        </div>
+      <div 
+        className="drag-handle cursor-move p-2 border-b flex justify-between items-center" 
+        onMouseDown={handleMouseDown}
+      >
+        <h3 className="font-medium">{children.props.title}</h3>
+        <button 
+          onClick={onDelete}
+          className="p-1 hover:bg-gray-100 rounded-full"
+          title="Delete component"
+        >
+          <X size={16} />
+        </button>
       </div>
-      <div className="component-content">
+      
+      <div className="component-content p-4 overflow-auto" style={{ height: 'calc(100% - 45px)' }}>
         {children}
       </div>
-      <div className="resize-handle" onMouseDown={handleMouseDown} />
+      
+      <div
+        className="resize-handle absolute bottom-0 right-0 w-4 h-4 cursor-se-resize"
+        onMouseDown={handleMouseDown}
+        style={{
+          background: 'linear-gradient(135deg, transparent 50%, #cbd5e0 50%)'
+        }}
+      />
     </div>
   );
 };
-
 // Utility function for filtered data
 export const processFilteredData = (data, filters) => {
   if (!filters || !data) return data;
