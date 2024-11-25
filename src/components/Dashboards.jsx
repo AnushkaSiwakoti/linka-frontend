@@ -9,26 +9,42 @@ const Dashboards = () => {
   const [dashboards, setDashboards] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [deleteInProgress, setDeleteInProgress] = useState(null);
+  const [isConfirmingDelete, setIsConfirmingDelete] = useState(null);
   const navigate = useNavigate();
 
   useEffect(() => {
-    const loggedInUser = localStorage.getItem('username');
-    if (loggedInUser) {
-      setIsLoggedIn(true);
-    }
-    fetchDashboards();
+    checkAuthAndFetchDashboards();
   }, []);
 
-  // Fetch the list of dashboards from the backend
+  const checkAuthAndFetchDashboards = async () => {
+    const loggedInUser = localStorage.getItem('username');
+    if (!loggedInUser) {
+      navigate('/login');
+      return;
+    }
+    setIsLoggedIn(true);
+    await fetchDashboards();
+  };
+
   const fetchDashboards = async () => {
     try {
       setLoading(true);
+      setError(null);
       const response = await fetch(`${process.env.REACT_APP_API_BASE_URL}/dashboards/list/`, {
         method: 'GET',
-        credentials: 'include', // To handle cookies
+        credentials: 'include',
+        headers: {
+          'Accept': 'application/json',
+        }
       });
 
       if (!response.ok) {
+        if (response.status === 401) {
+          localStorage.removeItem('username');
+          navigate('/login');
+          return;
+        }
         throw new Error('Failed to fetch dashboards');
       }
 
@@ -36,7 +52,7 @@ const Dashboards = () => {
       setDashboards(data.dashboards);
     } catch (error) {
       console.error('Error fetching dashboards:', error);
-      setError('Failed to load dashboards. Please try again.');
+      setError('Unable to load dashboards. Please refresh the page or try again later.');
     } finally {
       setLoading(false);
     }
@@ -45,103 +61,238 @@ const Dashboards = () => {
   const handleLogout = () => {
     localStorage.removeItem('username');
     setIsLoggedIn(false);
+    navigate('/login');
   };
 
-  // Fetch the dashboard details and navigate to the Build component
+  const deployDashboard = async (dashboardId) => {
+    try {
+      const response = await fetch(
+        `${process.env.REACT_APP_API_BASE_URL}/dashboards/deploy/`,
+        {
+          method: 'POST',
+          credentials: 'include', // To handle cookies
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ dashboard_id: dashboardId }),
+        }
+      );
+  
+      if (!response.ok) {
+        throw new Error('Failed to deploy dashboard');
+      }
+  
+      const data = await response.json();
+      const deployedUrl = data.deployed_url;
+  
+      // Redirect the user to the deployed URL
+      window.open(deployedUrl, '_blank');
+      
+    } catch (error) {
+      console.error('Error deploying dashboard:', error);
+      setError('Failed to deploy dashboard. Please try again.');
+    }
+  };
+  
+  
+
   const openDashboard = async (dashboardId) => {
     try {
+      setLoading(true);
+      setError(null);
       const response = await fetch(
         `${process.env.REACT_APP_API_BASE_URL}/dashboards/${dashboardId}/`,
         {
           method: 'GET',
-          credentials: 'include', // To handle cookies
+          credentials: 'include',
+          headers: {
+            'Accept': 'application/json',
+          }
         }
       );
 
       if (!response.ok) {
+        if (response.status === 401) {
+          navigate('/login');
+          return;
+        }
         throw new Error('Failed to fetch dashboard');
       }
 
       const data = await response.json();
-      // Navigate to the Build component and pass the dashboard state as location state
-      navigate(`/build/${dashboardId}`, { state: { dashboardState: data.state, dashboardName: data.name } });
+      navigate('/build', { 
+        state: { 
+          dashboardId,
+          dashboardState: data.state, 
+          dashboardName: data.name, 
+          columns: data.columns, 
+          data: data.data,
+          isEditing: true
+        } 
+      });
     } catch (error) {
       console.error('Error opening dashboard:', error);
-      setError('Failed to load dashboard. Please try again.');
+      setError('Unable to open dashboard. Please try again.');
+    } finally {
+      setLoading(false);
     }
   };
 
-  // Handle deleting a dashboard
   const deleteDashboard = async (dashboardId) => {
     try {
+      setDeleteInProgress(dashboardId);
+      setError(null);
+      
       const response = await fetch(`${process.env.REACT_APP_API_BASE_URL}/dashboards/delete/`, {
         method: 'DELETE',
         headers: {
           'Content-Type': 'application/json',
+          'Accept': 'application/json',
         },
-        credentials: 'include', // To handle cookies
-        body: JSON.stringify({ dashboard_id: dashboardId }), // Sending the ID in the request body
+        credentials: 'include',
+        body: JSON.stringify({ dashboard_id: dashboardId }),
       });
 
       if (!response.ok) {
+        if (response.status === 401) {
+          navigate('/login');
+          return;
+        }
         throw new Error('Failed to delete dashboard');
       }
 
       setDashboards((prevDashboards) =>
         prevDashboards.filter((dashboard) => dashboard.id !== dashboardId)
       );
+      setIsConfirmingDelete(null);
     } catch (error) {
       console.error('Error deleting dashboard:', error);
       setError('Failed to delete the dashboard. Please try again.');
+    } finally {
+      setDeleteInProgress(null);
     }
   };
 
-  return (
-    <>
-      <Navbar isLoggedIn={isLoggedIn} handleLogout={handleLogout} />
-      <div className="dashboards-container">
-        {/* Background Image */}
-        <img src="/shapes.png" alt="background shapes" className="background-image" />
-        {/* Main Content */}
-        <div className="dashboard-main-content">
-          <h1 className="section-title">My Dashboards</h1>
+  const handleDeleteClick = (dashboardId) => {
+    setIsConfirmingDelete(dashboardId);
+  };
 
-          {loading ? (
-            <p>Loading dashboards...</p>
-          ) : error ? (
-            <p className="error-message">{error}</p>
+  const formatDate = (dateString) => {
+    return new Date(dateString).toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  };
+
+  const renderDashboardCard = (dashboard) => (
+    <div key={dashboard.id} className="dashboard-card relative">
+      <h3 className="dashboard-name">{dashboard.name}</h3>
+      <div className="dashboard-preview">
+        <p className="text-sm text-gray-600">
+          Created: {formatDate(dashboard.created_at)}
+        </p>
+        <p className="text-sm text-gray-600">
+          Updated: {formatDate(dashboard.updated_at)}
+        </p>
+      </div>
+      
+      <div className="dashboard-actions">
+        <button
+          className="open-dashboard-button"
+          onClick={() => openDashboard(dashboard.id)}
+          disabled={loading || deleteInProgress === dashboard.id}
+        >
+          {loading ? 'Opening...' : 'Edit Dashboard'}
+        </button>
+
+        <button
+          className="deploy"
+          onClick={() => deployDashboard(dashboard.id)}
+          disabled={loading || deleteInProgress === dashboard.id}
+        >
+          {deleteInProgress === dashboard.id ? 'Deploying...' : 'Deploy'}
+        </button>
+        
+        {isConfirmingDelete === dashboard.id ? (
+          <div className="delete-confirmation">
+            <p>Are you sure?</p>
+            <button
+              className="confirm-delete-button"
+              onClick={() => deleteDashboard(dashboard.id)}
+              disabled={deleteInProgress === dashboard.id}
+            >
+              {deleteInProgress === dashboard.id ? 'Deleting...' : 'Confirm Delete'}
+            </button>
+            <button
+              className="cancel-delete-button"
+              onClick={() => setIsConfirmingDelete(null)}
+            >
+              Cancel
+            </button>
+          </div>
+        ) : (
+          <button
+            className="delete-dashboard-button"
+            onClick={() => handleDeleteClick(dashboard.id)}
+            disabled={deleteInProgress === dashboard.id}
+          >
+            Delete
+          </button>
+        )}
+      </div>
+    </div>
+  );
+
+  return (
+    <div className="min-h-screen flex flex-col">
+      <Navbar isLoggedIn={isLoggedIn} handleLogout={handleLogout} />
+      
+      <main className="flex-grow dashboards-container relative">
+        <img 
+          src="/shapes.png" 
+          alt="background shapes" 
+          className="background-image absolute inset-0 object-cover w-full h-full opacity-50"
+        />
+        
+        <div className="dashboard-main-content relative z-10">
+          <div className="flex justify-between items-center mb-6">
+            <h1 className="section-title text-2xl font-bold">My Dashboards</h1>
+          </div>
+
+          {error && (
+            <div className="error-banner mb-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded">
+              {error}
+            </div>
+          )}
+
+          {loading && !error ? (
+            <div className="loading-state p-4 text-center">
+              <p>Loading your dashboards...</p>
+            </div>
           ) : dashboards.length === 0 ? (
-            <p>No dashboards found. Start by creating a new dashboard.</p>
+            <div className="empty-state p-8 text-center bg-white rounded-lg shadow">
+              <h3 className="text-xl font-semibold mb-2">No Dashboards Yet</h3>
+              <p className="text-gray-600 mb-4">Create your first dashboard to get started!</p>
+              <button
+                onClick={() => navigate('/build')}
+                className="create-first-dashboard-button"
+              >
+                Create Your First Dashboard
+              </button>
+            </div>
           ) : (
-            <div className="dashboard-list">
-              {dashboards.map((dashboard) => (
-                <div key={dashboard.id} className="dashboard-card">
-                  <h3 className="dashboard-name">{dashboard.name}</h3>
-                  <p className="dashboard-preview">
-                    Created At: {new Date(dashboard.created_at).toLocaleString()}
-                    <br />
-                    Last Updated: {new Date(dashboard.updated_at).toLocaleString()}
-                  </p>
-                  <button
-                    className="open-dashboard-button"
-                    onClick={() => openDashboard(dashboard.id)}
-                  >
-                    Edit Dashboard
-                  </button>
-                  <button
-                    className="delete-dashboard-button"
-                    onClick={() => deleteDashboard(dashboard.id)}
-                  >
-                    Delete Dashboard
-                  </button>
-                </div>
-              ))}
+            <div className="dashboard-grid">
+              {dashboards.map(renderDashboardCard)}
             </div>
           )}
         </div>
-      </div>
+      </main>
+      
       <Footer />
-    </>
+    </div>
   );
 };
 

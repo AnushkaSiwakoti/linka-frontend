@@ -14,6 +14,7 @@ import {
   Legend,
 } from 'chart.js';
 import { Upload, Filter } from 'lucide-react';
+import Draggable from 'react-draggable';
 import './Build.css';
 import Navbar from './Navbar';
 import Footer from './Footer';
@@ -221,33 +222,42 @@ const Build = () => {
     }
   }, [updateComponentPositions]);
 
+
   // Save dashboard
-  const handleSaveDashboard = async () => {
-    try {
-      // Create dashboard data object
-      const dashboardData = {
-        name: dashboardName, // Use the user-provided dashboard name
-        state: {
-          charts,
-          filterRanges,
-          pageIndex,
-          showTable,
-          columns,
-          data,
-          tableFilters,
-          chartOptions,
-          classification,
-        },
-      };
-      if (!dashboardName) {
-        alert('Please enter a name for the dashboard before saving.');
-        return;
-      }
-  
-      // Convert dashboard data to JSON string
-      const jsonData = JSON.stringify(dashboardData);
-      const contentLength = new Blob([jsonData]).size;
-      
+const handleSaveDashboard = async () => {
+  try {
+    // Create dashboard data object
+    const dashboardData = {
+      name: dashboardName, // Use the user-provided dashboard name
+      state: {
+        charts,
+        componentOrder,
+        componentPositions,
+        filterRanges,
+        chartFilters,
+        showTable,
+        tableFilters,
+        columns,
+        classification,
+        charts,
+        pageIndex,
+        columns,
+        data,
+        tableFilters,
+        chartOptions,
+ 
+      },
+    };
+
+    if (!dashboardName) {
+      alert('Please enter a name for the dashboard before saving.');
+      return;
+    }
+
+    // Convert dashboard data to JSON string
+    const jsonData = JSON.stringify(dashboardData);
+    const contentLength = new Blob([jsonData]).size;
+
     // Make API call to save the dashboard
     const response = await fetch(`${process.env.REACT_APP_API_BASE_URL}/dashboards/save/`, {
       method: 'POST',
@@ -258,20 +268,21 @@ const Build = () => {
       credentials: 'include', // Crucial for sending and receiving cookies
       body: jsonData,
     });
-    
+
     // Handle response
     if (!response.ok) {
       const errorMessage = await response.text();
       throw new Error(`Failed to save dashboard: ${errorMessage}`);
     }
 
-    const responseData = await response.json(); // renamed variable
+    const responseData = await response.json();
     alert('Dashboard saved successfully!');
   } catch (error) {
     console.error('Error:', error);
     alert(`Error saving dashboard: ${error.message}`);
   }
-  };
+};
+
   
 const apiBaseUrl = process.env.REACT_APP_API_BASE_URL.replace(/\/+$/, ''); // Remove trailing slash
 
@@ -760,7 +771,12 @@ useEffect(() => {
     const yPosition = calculateNextYPosition();
     setComponentPositions(prev => ({
       ...prev,
-      [chartId]: { x: 20, y: yPosition }
+      [chartId]: {
+        x: 20,
+        y: yPosition,
+        width: 700,  // Set default width
+        height: 400  // Set default height
+      }
     }));
   }, [charts, processChartData, calculateNextYPosition, classification, chartOptions]);
   
@@ -824,7 +840,12 @@ useEffect(() => {
     const yPosition = calculateNextYPosition();
     setComponentPositions(prev => ({
       ...prev,
-      [chartId]: { x: 20, y: yPosition }
+      [chartId]: {
+        x: 20,
+        y: yPosition,
+        width: 700,  // Set default width
+        height: 400  // Set default height
+      }
     }));
   }, [charts, processChartData, calculateNextYPosition, classification, chartOptions]);
   
@@ -900,8 +921,14 @@ useEffect(() => {
     const yPosition = calculateNextYPosition();
     setComponentPositions(prev => ({
       ...prev,
-      [chartId]: { x: 20, y: yPosition }
+      [chartId]: {
+        x: 20,
+        y: yPosition,
+        width: 700,  // Default width for new components
+        height: 400  // Default height for new components
+      }
     }));
+    
   }, [charts, data, classification, calculateNextYPosition]);
 
 
@@ -1019,6 +1046,7 @@ useEffect(() => {
     const endIndex = startIndex + tableFilters.rowsPerPage;
     const pageData = filteredData.slice(startIndex, endIndex);
   
+  
     return (
       <div className="table-section">
         {showFilters.table && (
@@ -1106,14 +1134,36 @@ useEffect(() => {
   
     return (
       <DraggableComponent
-        key={componentId}
-        id={componentId}
-        isActive={activeComponentId === componentId}
-        onActivate={() => setActiveComponentId(componentId)}
-        defaultPosition={componentPositions[componentId]}
-        defaultSize={{
-          width: 700,
-          height: isTable ? 800 : 400,
+      key={componentId}
+      id={componentId}
+      isActive={activeComponentId === componentId}
+      onActivate={() => setActiveComponentId(componentId)}
+      defaultPosition={componentPositions[componentId]}
+      defaultSize={{
+        width: 700,
+        height: isTable ? 800 : 400,
+      }}
+      onDragStop={(e, data) => {
+        console.log('Drag stopped:', data);
+        setComponentPositions((prev) => ({
+          ...prev,
+          [componentId]: {
+            ...prev[componentId],
+            x: data.x,
+            y: data.y,
+          },
+        }));
+      }}
+      onResize={(newSize) => {
+        console.log('Drag resize stopped:', newSize);
+        setComponentPositions((prev) => ({
+          ...prev,
+          [componentId]: {
+            ...prev[componentId],
+            width: newSize.width ,
+            height: newSize.height 
+          }
+          }));
         }}
         onDelete={() => handleDeleteComponent(isTable ? 'table' : 'chart', chart)}
       >
