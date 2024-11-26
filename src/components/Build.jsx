@@ -222,66 +222,88 @@ const Build = () => {
   }, [updateComponentPositions]);
 
 
-  // Save dashboard
-const handleSaveDashboard = async () => {
-  try {
-    // Create dashboard data object
-    const dashboardData = {
-      name: dashboardName, // Use the user-provided dashboard name
-      state: {
-        charts,
-        componentOrder,
-        componentPositions,
-        filterRanges,
-        chartFilters,
-        showTable,
-        tableFilters,
-        columns,
-        classification,
-        charts,
-        pageIndex,
-        columns,
-        data,
-        tableFilters,
-        chartOptions,
- 
-      },
-    };
-
-    if (!dashboardName) {
-      alert('Please enter a name for the dashboard before saving.');
-      return;
+  const handleSaveDashboard = async () => {
+    try {
+      if (!dashboardName) {
+        alert('Please enter a name for the dashboard before saving.');
+        return;
+      }
+  
+      // Log current positions for debugging
+      console.log("Current Positions:", componentPositions);
+      console.log("Current Order:", componentOrder);
+  
+      // Create dashboard data object with cleaned state
+      const dashboardData = {
+        name: dashboardName,
+        state: {
+          // Layout state
+          componentPositions: Object.fromEntries(
+            Object.entries(componentPositions).map(([id, pos]) => [
+              id,
+              {
+                x: Math.round(pos.x),
+                y: Math.round(pos.y),
+                width: Math.round(pos.width || 700),
+                height: Math.round(pos.height || (id === 'table' ? 800 : 400))
+              }
+            ])
+          ),
+          componentOrder: componentOrder,
+          
+          // Chart state
+          charts: charts.map(chart => ({
+            ...chart,
+            data: chart.data,
+            options: chart.options
+          })),
+          
+          // Table state
+          showTable,
+          columns,
+          data,
+          tableFilters,
+          
+          // Additional state
+          filterRanges,
+          chartFilters,
+          classification,
+          chartOptions,
+          pageIndex
+        }
+      };
+  
+      // Log the prepared data
+      console.log("Saving dashboard data:", JSON.stringify(dashboardData, null, 2));
+  
+      // Convert to JSON and get content length
+      const jsonData = JSON.stringify(dashboardData);
+      const contentLength = new Blob([jsonData]).size;
+  
+      // Make API call to save the dashboard
+      const response = await fetch(`${process.env.REACT_APP_API_BASE_URL}/dashboards/save/`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Content-Length': contentLength
+        },
+        credentials: 'include',
+        body: jsonData
+      });
+  
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to save dashboard');
+      }
+  
+      const result = await response.json();
+      console.log("Save response:", result);
+      alert('Dashboard saved successfully!');
+    } catch (error) {
+      console.error('Error saving dashboard:', error);
+      alert(`Error saving dashboard: ${error.message}`);
     }
-
-    // Convert dashboard data to JSON string
-    const jsonData = JSON.stringify(dashboardData);
-    const contentLength = new Blob([jsonData]).size;
-
-    // Make API call to save the dashboard
-    const response = await fetch(`${process.env.REACT_APP_API_BASE_URL}/dashboards/save/`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Content-Length': contentLength, // Adding content length to the headers
-      },
-      credentials: 'include', // Crucial for sending and receiving cookies
-      body: jsonData,
-    });
-
-    // Handle response
-    if (!response.ok) {
-      const errorMessage = await response.text();
-      throw new Error(`Failed to save dashboard: ${errorMessage}`);
-    }
-
-    const responseData = await response.json();
-    alert('Dashboard saved successfully!');
-  } catch (error) {
-    console.error('Error:', error);
-    alert(`Error saving dashboard: ${error.message}`);
-  }
-};
-
+  };
   
 const apiBaseUrl = process.env.REACT_APP_API_BASE_URL.replace(/\/+$/, ''); // Remove trailing slash
 
