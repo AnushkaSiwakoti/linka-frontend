@@ -13,8 +13,7 @@ import {
   Tooltip,
   Legend,
 } from 'chart.js';
-import { Upload, Filter } from 'lucide-react';
-import Draggable from 'react-draggable';
+import { Upload, Filter, X, Loader } from 'lucide-react';
 import './Build.css';
 import Navbar from './Navbar';
 import Footer from './Footer';
@@ -1272,31 +1271,88 @@ useEffect(() => {
         </div>
       )}
 
-      {!fileUploaded ? (
-        <div className="upload-container">
-          <h1>Upload Your CSV File</h1>
-          <div className="upload-area">
-            <input
-              type="file"
-              onChange={handleFileChange}
-              accept=".csv"
-              className="file-input"
-              id="csv-file-input"
-            />
-            <label htmlFor="csv-file-input">
-              {selectedFile ? selectedFile.name : 'Choose CSV file'}
-            </label>
-            <button
-              onClick={handleFileUpload}
-              disabled={!selectedFile || loading}
-              className="upload-button"
-            >
-              <Upload size={16} />
-              {loading ? 'Uploading...' : 'Upload'}
-            </button>
-          </div>
+{!fileUploaded ? (
+  <div className="upload-container">
+    <div className="upload-header">
+      <h1>Upload Your Data</h1>
+      <p>Upload your CSV file to create interactive visualizations and analyze your data</p>
+    </div>
+
+    <div className="upload-area">
+      <input
+        type="file"
+        onChange={handleFileChange}
+        accept=".csv"
+        className="file-input"
+        id="csv-file-input"
+      />
+      
+      <label htmlFor="csv-file-input" className="file-input-label">
+        <Upload className="upload-icon" />
+        <div className="upload-text">
+          <span className="upload-text-primary">
+            {selectedFile ? 'Change file' : 'Choose a CSV file'}
+          </span>
+          <span className="upload-text-secondary">
+            or drag and drop it here
+          </span>
         </div>
+      </label>
+
+      {selectedFile && (
+        <div className="file-info">
+          <Upload className="file-info-icon" />
+          <span className="file-name">{selectedFile.name}</span>
+          <button 
+            className="remove-file"
+            onClick={() => setSelectedFile(null)}
+            type="button"
+            aria-label="Remove file"
+          >
+            <X size={18} />
+          </button>
+        </div>
+      )}
+
+      {loading && (
+        <div className="loading-overlay">
+          <div className="loading-spinner" />
+        </div>
+      )}
+    </div>
+
+    {error && (
+      <div className="error-message">
+        <span>{error}</span>
+        <button 
+          onClick={() => setError(null)} 
+          type="button"
+          aria-label="Close error message"
+        >
+          <X size={16} />
+        </button>
+      </div>
+    )}
+
+    <button
+      className="upload-button"
+      onClick={handleFileUpload}
+      disabled={!selectedFile || loading}
+    >
+      {loading ? (
+        <>
+          <Loader className="animate-spin" size={16} />
+          <span>Uploading...</span>
+        </>
       ) : (
+        <>
+          <Upload size={16} />
+          <span>Upload File</span>
+        </>
+      )}
+    </button>
+  </div>
+) : (
         <>
           {/* Sidebar */}
           <div className={`sidebar ${isSidebarExpanded ? 'expanded' : 'collapsed'}`}>
