@@ -16,7 +16,9 @@ const Dashboards = () => {
   useEffect(() => {
     checkAuthAndFetchDashboards();
   }, []);
+  
 
+  // Check for a stored username (or other indicator) and then fetch dashboards
   const checkAuthAndFetchDashboards = async () => {
     const loggedInUser = localStorage.getItem('username');
     if (!loggedInUser) {
@@ -27,6 +29,7 @@ const Dashboards = () => {
     await fetchDashboards();
   };
 
+  // Fetch dashboards from the backend; note that we send credentials (cookies)
   const fetchDashboards = async () => {
     try {
       setLoading(true);
@@ -58,19 +61,21 @@ const Dashboards = () => {
     }
   };
 
+  // Logout by removing the username from local storage and redirecting to login
   const handleLogout = () => {
     localStorage.removeItem('username');
     setIsLoggedIn(false);
     navigate('/login');
   };
 
+  // Deploy dashboard: sends a POST request to deploy the dashboard
   const deployDashboard = async (dashboardId) => {
     try {
       const response = await fetch(
         `${process.env.REACT_APP_API_BASE_URL}/dashboards/deploy/`,
         {
           method: 'POST',
-          credentials: 'include', // To handle cookies
+          credentials: 'include',
           headers: {
             'Content-Type': 'application/json',
           },
@@ -84,18 +89,14 @@ const Dashboards = () => {
   
       const data = await response.json();
       const deployedUrl = data.deployed_url;
-  
-      // Redirect the user to the deployed URL
       window.open(deployedUrl, '_blank');
-      
     } catch (error) {
       console.error('Error deploying dashboard:', error);
       setError('Failed to deploy dashboard. Please try again.');
     }
   };
-  
-  
 
+  // Open a dashboard: fetch the dashboard details and navigate to the build page
   const openDashboard = async (dashboardId) => {
     try {
       setLoading(true);
@@ -138,21 +139,20 @@ const Dashboards = () => {
     }
   };
 
+  // Delete a dashboard by sending a DELETE request
   const deleteDashboard = async (dashboardId) => {
     try {
       setDeleteInProgress(dashboardId);
       setError(null);
-      
       const response = await fetch(`${process.env.REACT_APP_API_BASE_URL}/dashboards/delete/`, {
         method: 'DELETE',
+        credentials: 'include',
         headers: {
           'Content-Type': 'application/json',
           'Accept': 'application/json',
         },
-        credentials: 'include',
         body: JSON.stringify({ dashboard_id: dashboardId }),
       });
-
       if (!response.ok) {
         if (response.status === 401) {
           navigate('/login');
@@ -160,7 +160,6 @@ const Dashboards = () => {
         }
         throw new Error('Failed to delete dashboard');
       }
-
       setDashboards((prevDashboards) =>
         prevDashboards.filter((dashboard) => dashboard.id !== dashboardId)
       );
@@ -177,6 +176,7 @@ const Dashboards = () => {
     setIsConfirmingDelete(dashboardId);
   };
 
+  // Helper to format date strings
   const formatDate = (dateString) => {
     return new Date(dateString).toLocaleDateString('en-US', {
       year: 'numeric',
@@ -187,6 +187,7 @@ const Dashboards = () => {
     });
   };
 
+  // Render a single dashboard card
   const renderDashboardCard = (dashboard) => (
     <div key={dashboard.id} className="dashboard-card relative">
       <h3 className="dashboard-name">{dashboard.name}</h3>
@@ -198,7 +199,6 @@ const Dashboards = () => {
           Updated: {formatDate(dashboard.updated_at)}
         </p>
       </div>
-      
       <div className="dashboard-actions">
         <button
           className="open-dashboard-button"
@@ -207,7 +207,6 @@ const Dashboards = () => {
         >
           {loading ? 'Opening...' : 'Edit Dashboard'}
         </button>
-
         <button
           className="deploy"
           onClick={() => deployDashboard(dashboard.id)}
@@ -215,7 +214,6 @@ const Dashboards = () => {
         >
           {deleteInProgress === dashboard.id ? 'Deploying...' : 'Deploy'}
         </button>
-        
         {isConfirmingDelete === dashboard.id ? (
           <div className="delete-confirmation">
             <p>Are you sure?</p>
@@ -249,25 +247,21 @@ const Dashboards = () => {
   return (
     <div className="min-h-screen flex flex-col">
       <Navbar isLoggedIn={isLoggedIn} handleLogout={handleLogout} />
-      
       <main className="flex-grow dashboards-container relative">
         <img 
           src="/shapes.png" 
           alt="background shapes" 
           className="background-image absolute inset-0 object-cover w-full h-full opacity-50"
         />
-        
         <div className="dashboard-main-content relative z-10">
           <div className="flex justify-between items-center mb-6">
             <h1 className="section-title text-2xl font-bold">My Dashboards</h1>
           </div>
-
           {error && (
             <div className="error-banner mb-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded">
               {error}
             </div>
           )}
-
           {loading && !error ? (
             <div className="loading-state p-4 text-center">
               <p>Loading your dashboards...</p>
@@ -290,7 +284,6 @@ const Dashboards = () => {
           )}
         </div>
       </main>
-      
       <Footer />
     </div>
   );

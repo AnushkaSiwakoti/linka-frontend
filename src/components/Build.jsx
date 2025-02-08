@@ -99,6 +99,8 @@ const Build = () => {
   const [data, setData] = useState([]);
   const [dashboardName, setDashboardName] = useState('');
   const [fileId, setFileId] = useState(null);
+  const [svgContent, setSvgContent] = useState(null);
+  const [fileType, setFileType] = useState(null); 
 
   // Layout state
   const [charts, setCharts] = useState([]);
@@ -109,6 +111,7 @@ const Build = () => {
   const [showFilters, setShowFilters] = useState({});
   const [chartFilters, setChartFilters] = useState({});
 
+  
   // Table state
   const [pageIndex, setPageIndex] = useState(0);
   const [tableFilters, setTableFilters] = useState({
@@ -120,15 +123,81 @@ const Build = () => {
     activeFilters: []
   });
 
+  
   // Classification state
   const [classification, setClassification] = useState({
     numericalColumns: [],
     categoricalColumns: [],
     dateColumns: []
   });
+
+  const classifyColumns = useCallback((headers, parsedData, currentFileType) => {
+    const numerical = [];
+    const categorical = [];
+    const dates = [];
+    const sampleSize = Math.min(100, parsedData.length);
+  
+    headers.forEach(column => {
+      // Skip SVG content column for classification
+      if (column === 'content' && currentFileType === 'svg') {
+        categorical.push(column);
+        return;
+      }
+  
+      const samples = parsedData.slice(0, sampleSize).map(row => row[column]);
+      const numberCount = samples.filter(val => !isNaN(parseFloat(val))).length;
+      const dateCount = samples.filter(val => !isNaN(Date.parse(val))).length;
+  
+      if (numberCount > sampleSize * 0.8) {
+        numerical.push(column);
+      } else if (dateCount > sampleSize * 0.8) {
+        dates.push(column);
+      } else {
+        categorical.push(column);
+      }
+    });
+  
+    setClassification({ numericalColumns: numerical, categoricalColumns: categorical, dateColumns: dates });
+  }, []);
+  
   // Refs and hooks
   const containerRef = useRef(null);
   const { processChartData } = useDataProcessing(data, columns);
+ 
+  
+  const cleanupFileProcessing = useCallback(() => {
+    setData([]);
+    setColumns([]);
+    setClassification({
+      numericalColumns: [],
+      categoricalColumns: [],
+      dateColumns: []
+    });
+    setSvgContent(null);
+    setFileUploaded(false);
+    setFileType(null);
+    localStorage.removeItem('lastUploadedFileUrl');
+    localStorage.removeItem('lastUploadedFileType');
+  }, []);
+
+  const handleNewFileUpload = useCallback(() => {
+    cleanupFileProcessing();
+    setSelectedFile(null);
+    setError(null);
+    setCharts([]);
+    setShowTable(false);
+    setComponentOrder([]);
+    setComponentPositions({});
+  }, [cleanupFileProcessing]);
+
+  const onUploadSuccess = useCallback((fileUrl) => {
+    console.log('File uploaded successfully:', fileUrl);
+  }, []);
+
+  const onUploadError = useCallback((error) => {
+    console.error('File upload error:', error);
+  }, []);
+
 
   // Add this useEffect to check authentication status
   useEffect(() => {
@@ -165,6 +234,22 @@ const Build = () => {
     movingAveragePeriod: 3
   });
 
+  const getFileTypeError = (fileType) => {
+    switch (fileType) {
+      case 'csv':
+        return 'The CSV file appears to be invalid or empty.';
+      case 'json':
+        return 'The JSON file must contain an array of objects with consistent structure.';
+      case 'xml':
+        return 'The XML file must contain data that can be converted to tabular format.';
+      case 'txt':
+        return 'The text file must contain structured data with consistent delimiters.';
+      case 'svg':
+        return 'The SVG file appears to be invalid or corrupted.';
+      default:
+        return 'Invalid file format.';
+    }
+  };
   
   const handleSort = useCallback((column) => {
     setTableFilters(prev => ({
@@ -220,24 +305,30 @@ const Build = () => {
       updateComponentPositions();
     }
   }, [updateComponentPositions]);
-
+  
+  const getCSRFToken = () => {
+    return document.cookie
+      .split('; ')
+      .find(row => row.startsWith('csrftoken='))
+      ?.split('=')[1];
+  };
 
   const handleSaveDashboard = async () => {
     try {
-      if (!dashboardName) {
+      // Check that a dashboard name is provided
+      if (!dashboardName.trim()) {
         alert('Please enter a name for the dashboard before saving.');
         return;
       }
   
-      // Log current positions for debugging
-      console.log("Current Positions:", componentPositions);
-      console.log("Current Order:", componentOrder);
+      setLoading(true);
   
-      // Create dashboard data object with cleaned state
+      // Build the dashboard payload. This object must match what your Django view expects.
+      // Your Django view looks for a JSON payload with a "name" and a "state" key.
       const dashboardData = {
-        name: dashboardName,
+        name: dashboardName.trim(),
         state: {
-          // Layout state
+          // Convert component positions to a simplified format
           componentPositions: Object.fromEntries(
             Object.entries(componentPositions).map(([id, pos]) => [
               id,
@@ -249,74 +340,163 @@ const Build = () => {
               }
             ])
           ),
-          componentOrder: componentOrder,
-          
-          // Chart state
+          componentOrder, // Array of component IDs in the order they appear
           charts: charts.map(chart => ({
             ...chart,
+            // Include the chart data and options that were created on the frontend
             data: chart.data,
             options: chart.options
           })),
-          
-          // Table state
           showTable,
           columns,
           data,
           tableFilters,
-          
-          // Additional state
           filterRanges,
           chartFilters,
           classification,
           chartOptions,
-          pageIndex
+          pageIndex,
+          fileType,
+          fileId
         }
       };
-  
       // Log the prepared data
       console.log("Saving dashboard data:", JSON.stringify(dashboardData, null, 2));
   
       // Convert to JSON and get content length
       const jsonData = JSON.stringify(dashboardData);
-      const contentLength = new Blob([jsonData]).size;
-  
+      const contentLength = new Blob([jsonData]).size
+      
       // Make API call to save the dashboard
+      const csrfToken = getCSRFToken();
       const response = await fetch(`${process.env.REACT_APP_API_BASE_URL}/dashboards/save/`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'X-CSRFToken': csrfToken,
           'Content-Length': contentLength
         },
         credentials: 'include',
         body: jsonData
       });
-  
+
       if (!response.ok) {
         const errorData = await response.json();
         throw new Error(errorData.error || 'Failed to save dashboard');
       }
+      // Parse the JSON response from the server.
+      const responseData = await response.json();
+      console.log('Dashboard Save Response:', responseData);
   
-      const result = await response.json();
-      console.log("Save response:", result);
-      alert('Dashboard saved successfully!');
+      // Check if the response indicates success (your view returns a dashboard_id on success)
+      if (response.ok && responseData.dashboard_id) {
+        alert('Dashboard saved successfully!');
+      } else {
+        throw new Error(responseData.error || 'Failed to save dashboard.');
+      }
     } catch (error) {
       console.error('Error saving dashboard:', error);
       alert(`Error saving dashboard: ${error.message}`);
+    } finally {
+      setLoading(false);
     }
-  };
+  };  
   
-const apiBaseUrl = process.env.REACT_APP_API_BASE_URL.replace(/\/+$/, ''); // Remove trailing slash
+const apiBaseUrl = process.env.REACT_APP_API_BASE_URL.replace(/\/+$/, ''); 
+
+const acceptedFileTypes = {
+  'text/csv': '.csv',
+  'application/xml': '.xml',
+  'text/plain': '.txt',
+  'image/svg+xml': '.svg',
+  'application/json': '.json'
+};
 
 const handleFileChange = (e) => {
   const file = e.target.files[0];
-  if (file && file.type === 'text/csv') {
-      setSelectedFile(file); 
-  } else {
-      setError('Please upload a valid CSV file.');
+  if (!file) return;
+
+  const fileExtension = file.name.split('.').pop().toLowerCase();
+  const acceptedExtensions = Object.values(acceptedFileTypes).map(ext => ext.replace('.', ''));
+  
+  if (!acceptedExtensions.includes(fileExtension)) {
+    setError(`Invalid file type. Please upload one of these types: ${Object.values(acceptedFileTypes).join(', ')}`);
+    return;
   }
+
+  setFileType(fileExtension);
+  setSelectedFile(file);
+  setError(null);
 };
 
-// Modified handleFileUpload function to handle Google Drive integration
+
+// // Modified handleFileUpload function to handle Google Drive integration
+// const handleFileUpload = async () => {
+//   if (!selectedFile) {
+//     setError('Please select a file to upload.');
+//     return;
+//   }
+
+//   setLoading(true);
+//   setError(null);
+
+//   const formData = new FormData();
+//   formData.append('file', selectedFile);
+
+//   try {
+//     // Uses your existing API endpoint but now expects Google Drive URL in response
+//     const response = await fetch(`${apiBaseUrl}/file/upload/`, {
+//       method: 'POST',
+//       body: formData,
+//       credentials: 'include',
+//       headers: {
+//         'Authorization': `Bearer ${localStorage.getItem('authToken')}`
+//       }
+//     });
+
+//     if (!response.ok) {
+//       const errorData = await response.json();
+//       throw new Error(errorData.message || 'Upload failed.');
+//     }
+
+//     const result = await response.json();
+    
+//     if (result.status === 'success') {
+//       // Store the Google Drive URL for future fetching
+//       if (result.file_url) {
+//         // Save the file URL for later use
+//         setFileId(result.file_url);
+//       }
+
+//       // Process the CSV content as before
+//       if (result.csv_content) {
+//         const headers = result.csv_content[0];
+//         const rows = result.csv_content.slice(1);
+//         const parsedData = rows.map(row => {
+//           const obj = {};
+//           headers.forEach((header, index) => {
+//             obj[header] = row[index];
+//           });
+//           return obj;
+//         });
+
+//         setData(parsedData);
+//         setColumns(headers);
+//         setFileUploaded(true);
+//         classifyColumns(headers, parsedData);
+//       } else {
+//         throw new Error('Invalid CSV data received from server');
+//       }
+//     } else {
+//       throw new Error('Invalid response from server');
+//     }
+//   } catch (err) {
+//     setError(`Error uploading file: ${err.message}`);
+//   } finally {
+//     setLoading(false);
+//   }
+// };
+
 const handleFileUpload = async () => {
   if (!selectedFile) {
     setError('Please select a file to upload.');
@@ -328,13 +508,16 @@ const handleFileUpload = async () => {
 
   const formData = new FormData();
   formData.append('file', selectedFile);
+  formData.append('fileType', fileType);
 
   try {
-    // Uses your existing API endpoint but now expects Google Drive URL in response
     const response = await fetch(`${apiBaseUrl}/file/upload/`, {
       method: 'POST',
       body: formData,
       credentials: 'include',
+      headers: {
+        'Authorization': `Bearer ${localStorage.getItem('authToken')}`
+      }
     });
 
     if (!response.ok) {
@@ -345,123 +528,488 @@ const handleFileUpload = async () => {
     const result = await response.json();
     
     if (result.status === 'success') {
-      // Store the Google Drive URL for future fetching
+      // Store the Google Drive URL if provided
       if (result.file_url) {
-        // Save the file URL for later use
         setFileId(result.file_url);
+        localStorage.setItem('lastUploadedFileUrl', result.file_url);
+        localStorage.setItem('lastUploadedFileType', fileType);
       }
 
-      // Process the CSV content as before
-      if (result.csv_content) {
-        const headers = result.csv_content[0];
-        const rows = result.csv_content.slice(1);
-        const parsedData = rows.map(row => {
-          const obj = {};
-          headers.forEach((header, index) => {
-            obj[header] = row[index];
-          });
-          return obj;
-        });
+      // Process the file content based on type
+      const contentKey = `${fileType}_content`;
+      if (!result[contentKey]) {
+        throw new Error(`Invalid ${fileType} data received from server`);
+      }
 
-        setData(parsedData);
-        setColumns(headers);
-        setFileUploaded(true);
-        classifyColumns(headers, parsedData);
-      } else {
-        throw new Error('Invalid CSV data received from server');
+      const processedResults = processIncomingData(result[contentKey], fileType);
+      if (!processedResults) {
+        throw new Error(`Failed to process ${fileType} data`);
+      }
+
+      // Handle SVG content separately if needed
+      if (fileType === 'svg' && result.svg_content) {
+        setSvgContent(result.svg_content);
+      }
+
+      // Signal successful upload
+      if (onUploadSuccess) {
+        onUploadSuccess(result.file_url);
       }
     } else {
       throw new Error('Invalid response from server');
     }
   } catch (err) {
-    setError(`Error uploading file: ${err.message}`);
+    const errorMessage = getFileTypeError(fileType) || err.message;
+    setError(`Error uploading file: ${errorMessage}`);
+    if (onUploadError) {
+      onUploadError(err);
+    }
   } finally {
     setLoading(false);
   }
 };
 
-// Modified fetchCSVData function to work with stored Google Drive URLs
-const fetchCSVData = async (fileUrl) => {
+
+const processIncomingData = useCallback((data, fileType) => {
+  try {
+    // Standardize and validate incoming data
+    if (!data) {
+      throw new Error('No data received for processing');
+    }
+
+    let processedData = [];
+    let processedColumns = [];
+
+    switch (fileType) {
+      case 'csv':
+        // Handle CSV data with special consideration for header extraction
+        if (Array.isArray(data)) {
+          const headers = data[0];
+          processedData = data.slice(1).map(row => {
+            const rowData = {};
+            headers.forEach((header, index) => {
+              // Clean header names and handle empty values
+              const cleanHeader = header.trim();
+              rowData[cleanHeader] = row[index] !== undefined ? row[index].trim() : '';
+            });
+            return rowData;
+          });
+          processedColumns = headers.map(header => header.trim());
+        } else {
+          throw new Error('Invalid CSV data format');
+        }
+        break;
+
+        case 'json':
+          let jsonData;
+          try {
+            // Parse if string, otherwise use as is
+            jsonData = typeof data === 'string' ? JSON.parse(data) : data;
+            
+            // Function to transform data into rows
+            const transformToRows = (data) => {
+              // If data is an object with arrays, expand arrays into multiple rows
+              if (typeof data === 'object' && !Array.isArray(data)) {
+                const rows = [];
+                
+                // Find the array properties
+                const arrayProps = Object.entries(data).filter(([_, value]) => Array.isArray(value));
+                
+                if (arrayProps.length > 0) {
+                  // Get the longest array length
+                  const maxLength = Math.max(...arrayProps.map(([_, arr]) => arr.length));
+                  
+                  // Create a row for each item in the arrays
+                  for (let i = 0; i < maxLength; i++) {
+                    const row = {};
+                    // Add non-array properties to each row
+                    Object.entries(data).forEach(([key, value]) => {
+                      if (!Array.isArray(value)) {
+                        row[key] = value;
+                      }
+                    });
+                    // Add array items at current index
+                    arrayProps.forEach(([key, arr]) => {
+                      const item = arr[i];
+                      if (typeof item === 'object' && item !== null) {
+                        // If array item is an object, flatten its properties
+                        Object.entries(item).forEach(([itemKey, itemValue]) => {
+                          row[`${itemKey}`] = itemValue;
+                        });
+                      } else {
+                        row[key] = item;
+                      }
+                    });
+                    rows.push(row);
+                  }
+                  return rows;
+                }
+              }
+              
+              // If data is already an array, process each item
+              if (Array.isArray(data)) {
+                return data.map(item => {
+                  if (typeof item === 'object' && item !== null) {
+                    const flatItem = {};
+                    Object.entries(item).forEach(([key, value]) => {
+                      if (typeof value === 'object' && value !== null) {
+                        Object.entries(value).forEach(([subKey, subValue]) => {
+                          flatItem[`${subKey}`] = subValue;
+                        });
+                      } else {
+                        flatItem[key] = value;
+                      }
+                    });
+                    return flatItem;
+                  }
+                  return item;
+                });
+              }
+              
+              return [data];
+            };
+        
+            // Transform the data
+            processedData = transformToRows(jsonData);
+        
+            // Get all unique columns
+            const allColumns = new Set();
+            processedData.forEach(row => {
+              Object.keys(row).forEach(key => allColumns.add(key));
+            });
+            processedColumns = Array.from(allColumns);
+        
+            // Ensure all rows have all columns
+            processedData = processedData.map(row => {
+              const standardizedRow = {};
+              processedColumns.forEach(col => {
+                standardizedRow[col] = row[col] ?? '';
+              });
+              return standardizedRow;
+            });
+        
+          } catch (error) {
+            console.error('JSON processing error:', error);
+            throw new Error(`Invalid JSON format: ${error.message}`);
+          }
+          break;
+          
+      case 'xml':
+        // Handle flattened XML data
+        processedData = Array.isArray(data) ? data : [data];
+        // Extract columns from all objects to handle varying structures
+        const allColumns = new Set();
+        processedData.forEach(item => {
+          Object.keys(item).forEach(key => allColumns.add(key));
+        });
+        processedColumns = Array.from(allColumns);
+        // Standardize all objects to have all columns
+        processedData = processedData.map(item => {
+          const standardizedItem = {};
+          processedColumns.forEach(col => {
+            standardizedItem[col] = item[col] !== undefined ? item[col] : '';
+          });
+          return standardizedItem;
+        });
+        break;
+
+      case 'txt':
+        // Handle text data with auto-detection of delimiter
+        if (typeof data === 'string') {
+          const lines = data.trim().split('\n');
+          const delimiter = lines[0].includes('\t') ? '\t' : ',';
+          const headers = lines[0].split(delimiter).map(h => h.trim());
+          processedData = lines.slice(1).map(line => {
+            const values = line.split(delimiter);
+            const rowData = {};
+            headers.forEach((header, index) => {
+              rowData[header] = values[index] ? values[index].trim() : '';
+            });
+            return rowData;
+          });
+          processedColumns = headers;
+        } else {
+          processedData = [{ content: String(data) }];
+          processedColumns = ['content'];
+        }
+        break;
+
+      case 'svg':
+        // Handle SVG with metadata
+        processedData = [{
+          filename: data.filename || 'untitled.svg',
+          filesize: data.filesize || 0,
+          lastModified: data.lastModified || new Date().toISOString(),
+          content: data.content || data
+        }];
+        processedColumns = ['filename', 'filesize', 'lastModified', 'content'];
+        break;
+
+      default:
+        throw new Error(`Unsupported file type: ${fileType}`);
+    }
+
+    // Update application state
+    setData(processedData);
+    setColumns(processedColumns);
+    setFileUploaded(true);
+
+    // Classify columns if we have valid data
+    if (processedColumns.length > 0 && processedData.length > 0) {
+      classifyColumns(processedColumns, processedData);
+    }
+
+    return { processedData, processedColumns };
+
+  } catch (error) {
+    console.error('Error processing data:', error);
+    setError(`Error processing ${fileType} data: ${error.message}`);
+    return null;
+  }
+}, [classifyColumns]);
+
+// // Modified fetchCSVData function to work with stored Google Drive URLs
+// const fetchCSVData = async (fileUrl) => {
+//   if (!fileUrl) return;
+
+//   setLoading(true);
+//   setError(null);
+
+//   try {
+//     const response = await fetch(`${apiBaseUrl}/file/fetch_csv/`, {
+//       method: 'POST',
+//       headers: {
+//         'Content-Type': 'application/json',
+//       },
+//       body: JSON.stringify({ file_url: fileUrl }),
+//       credentials: 'include',
+//     });
+
+//     if (!response.ok) {
+//       const errorData = await response.json();
+//       throw new Error(errorData.message || 'Failed to fetch CSV data.');
+//     }
+
+//     const result = await response.json();
+    
+//     if (result.status === 'success' && result.csv_content) {
+//       // Use Papa.parse as you were doing before
+//       Papa.parse(result.csv_content, {
+//         header: true,
+//         skipEmptyLines: true,
+//         complete: (parseResult) => {
+//           if (parseResult.data && parseResult.data.length > 0) {
+//             setData(parseResult.data);
+//             setColumns(Object.keys(parseResult.data[0]));
+//             setFileUploaded(true);
+//             classifyColumns(Object.keys(parseResult.data[0]), parseResult.data);
+//           } else {
+//             setError('No data found in the fetched CSV.');
+//           }
+//         },
+//         error: (parseError) => setError(`Error parsing CSV: ${parseError.message}`),
+//       });
+//     } else {
+//       throw new Error('Invalid CSV data received from server');
+//     }
+//   } catch (err) {
+//     setError(`Error fetching CSV data: ${err.message}`);
+//   } finally {
+//     setLoading(false);
+//   }
+// };
+
+const fetchFileData = async (fileUrl) => {
   if (!fileUrl) return;
 
   setLoading(true);
   setError(null);
 
   try {
-    const response = await fetch(`${apiBaseUrl}/file/fetch_csv/`, {
+    const fileExtension = localStorage.getItem('lastUploadedFileType') || fileType;
+    if (!fileExtension) {
+      throw new Error('File type not specified');
+    }
+
+    const response = await fetch(`${apiBaseUrl}/file/fetch/`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
+        'Authorization': `Bearer ${localStorage.getItem('authToken')}`
       },
-      body: JSON.stringify({ file_url: fileUrl }),
+      body: JSON.stringify({ 
+        file_url: fileUrl,
+        file_type: fileExtension
+      }),
       credentials: 'include',
     });
 
     if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.message || 'Failed to fetch CSV data.');
+      throw new Error(`Failed to fetch file data: ${response.statusText}`);
     }
 
     const result = await response.json();
     
-    if (result.status === 'success' && result.csv_content) {
-      // Use Papa.parse as you were doing before
-      Papa.parse(result.csv_content, {
-        header: true,
-        skipEmptyLines: true,
-        complete: (parseResult) => {
-          if (parseResult.data && parseResult.data.length > 0) {
-            setData(parseResult.data);
-            setColumns(Object.keys(parseResult.data[0]));
-            setFileUploaded(true);
-            classifyColumns(Object.keys(parseResult.data[0]), parseResult.data);
-          } else {
-            setError('No data found in the fetched CSV.');
-          }
-        },
-        error: (parseError) => setError(`Error parsing CSV: ${parseError.message}`),
-      });
+    if (result.status === 'success') {
+      // Process based on file type
+      await handleFileTypeResponse(result, fileExtension);
     } else {
-      throw new Error('Invalid CSV data received from server');
+      throw new Error(result.message || 'Invalid response from server');
     }
   } catch (err) {
-    setError(`Error fetching CSV data: ${err.message}`);
+    console.error('Fetch error:', err);
+    setError(`Error fetching file data: ${err.message}`);
+    setFileUploaded(false);
   } finally {
     setLoading(false);
   }
 };
 
-// Add a new useEffect to handle initial data loading if there's a fileId
-useEffect(() => {
-  if (fileId && !fileUploaded) {
-    fetchCSVData(fileId);
+// Helper functions for processing different file types
+const handleFileTypeResponse = async (result, fileExtension) => {
+  switch (fileExtension) {
+    case 'csv':
+      await handleCSVResponse(result);
+      break;
+    case 'json':
+      await handleJSONResponse(result);
+      break;
+    case 'xml':
+      await handleXMLResponse(result);
+      break;
+    case 'txt':
+      await handleTextResponse(result);
+      break;
+    case 'svg':
+      await handleSVGResponse(result);
+      break;
+    default:
+      throw new Error('Unsupported file type');
   }
-}, [fileId]); // Add fileId to dependency array
+};
+const handleCSVResponse = async (result) => {
+  if (!result.csv_content) {
+    throw new Error('Invalid CSV data received from server');
+  }
 
-  // Column classification
-  const classifyColumns = useCallback((headers, parsedData) => {
-    const numerical = [];
-    const categorical = [];
-    const dates = [];
-    const sampleSize = Math.min(100, parsedData.length);
-
-    headers.forEach(column => {
-      const samples = parsedData.slice(0, sampleSize).map(row => row[column]);
-      const numberCount = samples.filter(val => !isNaN(parseFloat(val))).length;
-      const dateCount = samples.filter(val => !isNaN(Date.parse(val))).length;
-
-      if (numberCount > sampleSize * 0.8) {
-        numerical.push(column);
-      } else if (dateCount > sampleSize * 0.8) {
-        dates.push(column);
-      } else {
-        categorical.push(column);
-      }
+  return new Promise((resolve, reject) => {
+    Papa.parse(result.csv_content, {
+      header: true,
+      skipEmptyLines: true,
+      complete: (parseResult) => {
+        if (parseResult.data && parseResult.data.length > 0) {
+          const data = parseResult.data;
+          const columns = Object.keys(data[0]);
+          
+          setData(data);
+          setColumns(columns);
+          classifyColumns(columns, data);
+          resolve();
+        } else {
+          reject(new Error('No data found in the CSV.'));
+        }
+      },
+      error: (error) => reject(new Error(`Error parsing CSV: ${error.message}`))
     });
+  });
+};
 
-    setClassification({ numericalColumns: numerical, categoricalColumns: categorical, dateColumns: dates });
-  }, []);
+const handleJSONResponse = async (result) => {
+  if (!result.json_content) {
+    throw new Error('Invalid JSON data received from server');
+  }
+
+  const jsonData = Array.isArray(result.json_content) 
+    ? result.json_content 
+    : [result.json_content];
   
+  const columns = Object.keys(jsonData[0] || {});
+  
+  setData(jsonData);
+  setColumns(columns);
+  classifyColumns(columns, jsonData);
+};
+
+const handleXMLResponse = async (result) => {
+  if (!result.xml_content) {
+    throw new Error('Invalid XML data received from server');
+  }
+
+  const xmlData = Array.isArray(result.xml_content) 
+    ? result.xml_content 
+    : [result.xml_content];
+  
+  const columns = Object.keys(xmlData[0] || {});
+  
+  setData(xmlData);
+  setColumns(columns);
+  classifyColumns(columns, xmlData);
+};
+
+const handleTextResponse = async (result) => {
+  if (!result.text_content) {
+    throw new Error('Invalid text data received from server');
+  }
+
+  const lines = result.text_content.trim().split('\n');
+  const delimiter = lines[0].includes('\t') ? '\t' : ',';
+  
+  const headers = lines[0].split(delimiter).map(header => header.trim());
+  const parsedData = lines.slice(1).map(line => {
+    const values = line.split(delimiter);
+    const obj = {};
+    headers.forEach((header, index) => {
+      obj[header] = values[index] ? values[index].trim() : '';
+    });
+    return obj;
+  });
+
+  setData(parsedData);
+  setColumns(headers);
+  classifyColumns(headers, parsedData);
+};
+
+const handleSVGResponse = async (result) => {
+  if (!result.svg_content) {
+    throw new Error('Invalid SVG data received from server');
+  }
+
+  const svgData = [{
+    filename: result.filename || 'unknown.svg',
+    filesize: result.filesize || 0,
+    lastModified: result.lastModified || new Date().toISOString(),
+    content: result.svg_content
+  }];
+
+  const columns = ['filename', 'filesize', 'lastModified', 'content'];
+  
+  setData(svgData);
+  setColumns(columns);
+  classifyColumns(columns, svgData);
+};
+
+useEffect(() => {
+  let isMounted = true;
+  
+  const fetchData = async () => {
+    if (fileId && !fileUploaded) {
+      try {
+        await fetchFileData(fileId);
+        if (isMounted) {
+          setFileUploaded(true);
+        }
+      } catch (error) {
+        console.error('Error fetching file:', error);
+      }
+    }
+  };
+
+  fetchData();
+
+  return () => {
+    isMounted = false;
+  };
+}, [fileId]);
     
   const handleFilterRangeChange = (chartType, values) => {
     setFilterRanges(prev => ({ ...prev, [chartType]: values }));
@@ -1061,13 +1609,61 @@ useEffect(() => {
     return filteredData;
   }, [tableFilters, classification]);
   
+  const renderTableCell = useCallback((value, column) => {
+    if (value === null || value === undefined) {
+      return '';
+    }
+  
+    // Handle different types of values
+    if (typeof value === 'object' && !Array.isArray(value)) {
+      const formatted = JSON.stringify(value, null, 2);
+      return (
+        <div className="table-cell-content">
+          {formatted.length > 50 ? (
+            <div className="truncated-cell" title={formatted}>
+              {formatted.substring(0, 50)}...
+            </div>
+          ) : formatted}
+        </div>
+      );
+    }
+  
+    if (Array.isArray(value)) {
+      const displayValue = value.map(item => 
+        typeof item === 'object' ? JSON.stringify(item) : item.toString()
+      ).join(', ');
+      
+      return (
+        <div className="table-cell-content">
+          {displayValue.length > 50 ? (
+            <div className="truncated-cell" title={displayValue}>
+              {displayValue.substring(0, 50)}...
+            </div>
+          ) : displayValue}
+        </div>
+      );
+    }
+  
+    // Handle primitive values
+    return <div className="table-cell-content">{value.toString()}</div>;
+  }, []);
+
   const renderTable = useCallback(() => {
     const filteredData = applyTableFilters(data);
     const startIndex = pageIndex * tableFilters.rowsPerPage;
     const endIndex = startIndex + tableFilters.rowsPerPage;
     const pageData = filteredData.slice(startIndex, endIndex);
   
-  
+   const handleNewFileUpload = () => {
+    cleanupFileProcessing();
+    setSelectedFile(null);
+    setError(null);
+    setCharts([]);
+    setShowTable(false);
+    setComponentOrder([]);
+    setComponentPositions({});
+  };
+
     return (
       <div className="table-section">
         {showFilters.table && (
@@ -1105,7 +1701,11 @@ useEffect(() => {
               {pageData.map((row, rowIndex) => (
                 <tr key={rowIndex}>
                   {columns.map(column => (
-                    <td key={column}>{row[column]}</td>
+                    <td key={column}>
+                      {typeof row[column] === 'object' 
+                        ? JSON.stringify(row[column]) 
+                        : String(row[column] ?? '')}
+                    </td>
                   ))}
                 </tr>
               ))}
@@ -1297,29 +1897,29 @@ useEffect(() => {
   <div className="upload-container">
     <div className="upload-header">
       <h1>Upload Your Data</h1>
-      <p>Upload your CSV file to create interactive visualizations and analyze your data</p>
+      <p>Upload your data file (CSV, JSON, XML, TXT, or SVG) to create interactive visualizations and analyze your data</p>
     </div>
 
     <div className="upload-area">
-      <input
-        type="file"
-        onChange={handleFileChange}
-        accept=".csv"
-        className="file-input"
-        id="csv-file-input"
-      />
+    <input
+      type="file"
+      onChange={handleFileChange}
+      accept={Object.values(acceptedFileTypes).join(',')}
+      className="file-input"
+      id="csv-file-input"
+    />
       
-      <label htmlFor="csv-file-input" className="file-input-label">
-        <Upload className="upload-icon" />
-        <div className="upload-text">
-          <span className="upload-text-primary">
-            {selectedFile ? 'Change file' : 'Choose a CSV file'}
-          </span>
-          <span className="upload-text-secondary">
-            or drag and drop it here
-          </span>
-        </div>
-      </label>
+    <label htmlFor="csv-file-input" className="file-input-label">
+      <Upload className="upload-icon" />
+      <div className="upload-text">
+        <span className="upload-text-primary">
+          {selectedFile ? 'Change file' : 'Choose a file'}
+        </span>
+        <span className="upload-text-secondary">
+          or drag and drop it here
+        </span>
+      </div>
+    </label>
 
       {selectedFile && (
         <div className="file-info">
@@ -1461,7 +2061,10 @@ useEffect(() => {
 
               <button 
                 className="sidebar-button"
-                onClick={handleSaveDashboard}
+                onClick={(e) => {
+                  e.preventDefault(); // Prevent default form submission
+                  handleSaveDashboard();
+                }}
                 disabled={!dashboardName.trim() || loading}
               >
                 💾 {isSidebarExpanded && 'Save Dashboard'}
