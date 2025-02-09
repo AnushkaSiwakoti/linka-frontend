@@ -306,12 +306,7 @@ const Build = () => {
     }
   }, [updateComponentPositions]);
   
-  const getCSRFToken = () => {
-    return document.cookie
-      .split('; ')
-      .find(row => row.startsWith('csrftoken='))
-      ?.split('=')[1];
-  };
+
 
   const handleSaveDashboard = async () => {
     try {
@@ -368,12 +363,11 @@ const Build = () => {
       const contentLength = new Blob([jsonData]).size
       
       // Make API call to save the dashboard
-      const csrfToken = getCSRFToken();
+      // const csrfToken = getCSRFToken();
       const response = await fetch(`${process.env.REACT_APP_API_BASE_URL}/dashboards/save/`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'X-CSRFToken': csrfToken,
           'Content-Length': contentLength
         },
         credentials: 'include',

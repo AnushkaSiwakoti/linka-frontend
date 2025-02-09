@@ -1,35 +1,36 @@
-import React, { useState, useEffect } from 'react';
+import './SignUp.css';
+import React, { useState } from 'react';
 
 const Login = ({ onSuccess, onSwitchToSignUp }) => {
- const [username, setUsername] = useState('');
- const [password, setPassword] = useState(''); 
- const [error, setError] = useState(null);
+  const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState(null);
 
- const handleSubmit = async (event) => {
-   event.preventDefault();
-   try {
-     const response = await fetch(`${process.env.REACT_APP_API_BASE_URL}/verify-account/`, {
-       method: 'POST',
-       headers: { 
-         'Content-Type': 'application/json',
-         'Accept': 'application/json'
-       },
-       credentials: 'include', 
-       body: JSON.stringify({ username, password })
-     });
+  const handleSubmit = async (event) => {
+    event.preventDefault();
+    setError(null);
 
-     const data = await response.json();
-     if (response.ok) {
-       localStorage.setItem('username', username);
-       localStorage.setItem('sessionid', data.sessionid);
-       onSuccess?.();
-     } else {
-       setError(data.error || 'Invalid credentials');
-     }
-   } catch (error) {
-     setError('Server error. Please try again.');
-   }
- };
+    try {
+      const response = await fetch(`${process.env.REACT_APP_API_BASE_URL}/verify-account/`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username, password }),
+        credentials: 'include', // This enables sending and receiving cookies
+      });
+      const data = await response.json();
+      
+
+      if (response.ok) {
+        alert(data.message);
+        localStorage.setItem('username', username);
+        if (onSuccess) onSuccess();
+      } else {
+        setError(data.error || 'Invalid credentials, please try again.');
+      }
+    } catch (error) {
+      setError('Something went wrong. Please try again later.');
+    }
+  };
 
   return (
     <div className="form-wrapper">
@@ -42,6 +43,7 @@ const Login = ({ onSuccess, onSwitchToSignUp }) => {
             <input
               type="text"
               id="username"
+              name="username"
               value={username}
               onChange={(e) => setUsername(e.target.value)}
               required
@@ -52,15 +54,22 @@ const Login = ({ onSuccess, onSwitchToSignUp }) => {
             <input
               type="password"
               id="password"
+              name="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
             />
           </div>
-          <button type="submit" className="login-button">Login</button>
+          <button type="submit" className="login-button">
+            Login
+          </button>
           <div className="toggle-message">
-            Don't have an account?{' '}
-            <button type="button" className="toggle-button" onClick={onSwitchToSignUp}>
+            Don’t have an account?{' '}
+            <button
+              type="button"
+              className="toggle-button"
+              onClick={onSwitchToSignUp}
+            >
               Sign up
             </button>
           </div>
@@ -68,6 +77,6 @@ const Login = ({ onSuccess, onSwitchToSignUp }) => {
       </div>
     </div>
   );
- };
- 
- export default Login;
+};
+
+export default Login;
