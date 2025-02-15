@@ -397,8 +397,6 @@ const apiBaseUrl = process.env.REACT_APP_API_BASE_URL.replace(/\/+$/, '');
 const acceptedFileTypes = {
   'text/csv': '.csv',
   'application/xml': '.xml',
-  'text/plain': '.txt',
-  'image/svg+xml': '.svg',
   'application/json': '.json'
 };
 
@@ -448,74 +446,106 @@ const handleFileUpload = async () => {
     }
 
     const result = await response.json();
+    console.log('Upload response:', result);
 
     if (result.status === 'success') {
       if (result.file_url) {
         setFileId(result.file_url);
         localStorage.setItem('lastUploadedFileUrl', result.file_url);
         localStorage.setItem('lastUploadedFileType', fileType);
-      }
-
-      // Determine the key to use based on fileType.
-      const contentKey = `${fileType}_content`;
-      // For XML: if no xml_content is returned but text_content exists, use it.
-      if (fileType === 'xml' && !result[contentKey] && result.text_content) {
-        result[contentKey] = result.text_content;
-      }
-
-      if (!result[contentKey]) {
-        throw new Error(`Invalid ${fileType} data received from server`);
-      }
-
-      const processedResults = processIncomingData(result[contentKey], fileType);
-      if (!processedResults) {
-        throw new Error(`Failed to process ${fileType} data`);
-      }
-
-      if (onUploadSuccess) {
-        onUploadSuccess(result.file_url);
+        
+        await fetchFileData(result.file_url);
+      } else {
+        throw new Error('No file URL in upload response');
       }
     } else {
-      throw new Error('Invalid response from server');
+      throw new Error(result.message || 'Invalid response from server');
     }
   } catch (err) {
-    // If an XML file fails because it cannot be converted to tabular data,
-    // fall back to reading its raw content using FileReader.
-    if (
-      fileType === 'xml' &&
-      err.message &&
-      err.message.toLowerCase().includes('tabular')
-    ) {
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        const text = e.target.result;
-        // Process the raw XML as a fallback.
-        const fallbackData = [{
-          content: text
-        }];
-        setData(fallbackData);
-        setColumns(['content']);
-        setFileUploaded(true);
-        if (onUploadSuccess) {
-          onUploadSuccess("local-fallback-xml");
-        }
-        setLoading(false);
-      };
-      reader.onerror = (e) => {
-        setError(`Error reading file: ${e.target.error}`);
-        setLoading(false);
-      };
-      reader.readAsText(selectedFile);
-    } else {
-      const errorMessage = getFileTypeError(fileType) || err.message;
-      setError(`Error uploading file: ${errorMessage}`);
-      if (onUploadError) {
-        onUploadError(err);
-      }
-      setLoading(false);
-    }
+    console.error('Upload error:', err);
+    setError(`Error uploading file: ${err.message}`);
+  } finally {
+    setLoading(false);
   }
 };
+
+const fetchFileData = async (fileUrl) => {
+  if (!fileUrl) return;
+
+  setLoading(true);
+  setError(null);
+
+  try {
+    const fileExtension = localStorage.getItem('lastUploadedFileType') || fileType;
+    if (!fileExtension) {
+      throw new Error('File type not specified');
+    }
+
+    const requestBody = { 
+      file_url: fileUrl,
+      file_type: fileExtension
+    };
+
+    console.log('Fetching file data:', requestBody);
+
+    const response = await fetch(`${apiBaseUrl}/file/fetch_files/`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${localStorage.getItem('authToken')}`
+      },
+      body: JSON.stringify(requestBody),
+      credentials: 'include',
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('Fetch error response:', errorText);
+      throw new Error(`Failed to fetch file data: ${response.statusText}`);
+    }
+
+    const result = await response.json();
+    console.log('Fetch response:', result);
+    
+    if (result.status === 'success') {
+      const contentKey = `${fileExtension}_content`;
+      const content = result[contentKey];
+
+      if (!content) {
+        throw new Error(`No ${fileExtension} content in response`);
+      }
+
+      // Use processIncomingData to handle all file types
+      const processedResults = processIncomingData(content, fileExtension);
+      if (!processedResults) {
+        throw new Error(`Failed to process ${fileExtension} data`);
+      }
+
+      setData(processedResults.processedData);
+      setColumns(processedResults.processedColumns);
+
+      if (processedResults.processedColumns.length > 0 && 
+          processedResults.processedData.length > 0) {
+        classifyColumns(
+          processedResults.processedColumns,
+          processedResults.processedData,
+          fileExtension
+        );
+      }
+
+      setFileUploaded(true);
+    } else {
+      throw new Error(result.message || 'Failed to fetch file data');
+    }
+  } catch (err) {
+    console.error('Fetch error:', err);
+    setError(`Error fetching file data: ${err.message}`);
+    setFileUploaded(false);
+  } finally {
+    setLoading(false);
+  }
+};
+
 const processIncomingData = useCallback((data, fileType) => {
   try {
     let processedData = [];
@@ -656,160 +686,6 @@ const processIncomingData = useCallback((data, fileType) => {
   }
 }, [classifyColumns]);
 
-const fetchFileData = async (fileUrl) => {
-  if (!fileUrl) return;
-
-  setLoading(true);
-  setError(null);
-
-  try {
-    const fileExtension = localStorage.getItem('lastUploadedFileType') || fileType;
-    if (!fileExtension) {
-      throw new Error('File type not specified');
-    }
-
-    const requestBody = { 
-      file_url: fileUrl,
-      file_type: fileExtension
-    };
-
-    console.log('Sending request:', requestBody); // Debug log
-
-    const response = await fetch(`${apiBaseUrl}/file/fetch_files/`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${localStorage.getItem('authToken')}`
-      },
-      body: JSON.stringify(requestBody),
-      credentials: 'include',
-    });
-
-    console.log('Response status:', response.status); // Debug log
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error('Error response:', errorText); // Debug log
-      throw new Error(`Failed to fetch file data: ${response.statusText}`);
-    }
-
-    const result = await response.json();
-    console.log('Response data:', result); // Debug log
-    
-    if (result.status === 'success') {
-      await handleFileTypeResponse(result, fileExtension);
-    } else {
-      throw new Error(result.message || 'Invalid response from server');
-    }
-  } catch (err) {
-    console.error('Fetch error:', err);
-    setError(`Error fetching file data: ${err.message}`);
-    setFileUploaded(false);
-  } finally {
-    setLoading(false);
-  }
-};
-
-// Helper functions for processing different file types
-const handleFileTypeResponse = async (result, fileExtension) => {
-  switch (fileExtension) {
-    case 'csv':
-      await handleCSVResponse(result);
-      break;
-    case 'json':
-      await handleJSONResponse(result);
-      break;
-    case 'xml':
-      await handleXMLResponse(result);
-      break;
-    case 'txt':
-      await handleTextResponse(result);
-      break;
-    default:
-      throw new Error('Unsupported file type');
-  }
-};
-const handleCSVResponse = async (result) => {
-  if (!result.csv_content) {
-    throw new Error('Invalid CSV data received from server');
-  }
-
-  return new Promise((resolve, reject) => {
-    Papa.parse(result.csv_content, {
-      header: true,
-      skipEmptyLines: true,
-      complete: (parseResult) => {
-        if (parseResult.data && parseResult.data.length > 0) {
-          const data = parseResult.data;
-          const columns = Object.keys(data[0]);
-          
-          setData(data);
-          setColumns(columns);
-          classifyColumns(columns, data);
-          resolve();
-        } else {
-          reject(new Error('No data found in the CSV.'));
-        }
-      },
-      error: (error) => reject(new Error(`Error parsing CSV: ${error.message}`))
-    });
-  });
-};
-
-const handleJSONResponse = async (result) => {
-  if (!result.json_content) {
-    throw new Error('Invalid JSON data received from server');
-  }
-
-  const jsonData = Array.isArray(result.json_content) 
-    ? result.json_content 
-    : [result.json_content];
-  
-  const columns = Object.keys(jsonData[0] || {});
-  
-  setData(jsonData);
-  setColumns(columns);
-  classifyColumns(columns, jsonData);
-};
-
-const handleXMLResponse = async (result) => {
-  if (!result.xml_content) {
-    throw new Error('Invalid XML data received from server');
-  }
-
-  const xmlData = Array.isArray(result.xml_content) 
-    ? result.xml_content 
-    : [result.xml_content];
-  
-  const columns = Object.keys(xmlData[0] || {});
-  
-  setData(xmlData);
-  setColumns(columns);
-  classifyColumns(columns, xmlData);
-};
-
-const handleTextResponse = async (result) => {
-  if (!result.text_content) {
-    throw new Error('Invalid text data received from server');
-  }
-
-  const lines = result.text_content.trim().split('\n');
-  const delimiter = lines[0].includes('\t') ? '\t' : ',';
-  
-  const headers = lines[0].split(delimiter).map(header => header.trim());
-  const parsedData = lines.slice(1).map(line => {
-    const values = line.split(delimiter);
-    const obj = {};
-    headers.forEach((header, index) => {
-      obj[header] = values[index] ? values[index].trim() : '';
-    });
-    return obj;
-  });
-
-  setData(parsedData);
-  setColumns(headers);
-  classifyColumns(headers, parsedData);
-};
 
 useEffect(() => {
   let isMounted = true;
