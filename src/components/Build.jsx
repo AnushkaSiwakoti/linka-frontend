@@ -686,29 +686,29 @@ const processIncomingData = useCallback((data, fileType) => {
   }
 }, [classifyColumns]);
 
-
-useEffect(() => {
-  let isMounted = true;
+// having it be commented out just in case we need it later
+// useEffect(() => {
+//   let isMounted = true;
   
-  const fetchData = async () => {
-    if (fileId && !fileUploaded) {
-      try {
-        await fetchFileData(fileId);
-        if (isMounted) {
-          setFileUploaded(true);
-        }
-      } catch (error) {
-        console.error('Error fetching file:', error);
-      }
-    }
-  };
+//   const fetchData = async () => {
+//     if (fileId && !fileUploaded) {
+//       try {
+//         await fetchFileData(fileId);
+//         if (isMounted) {
+//           setFileUploaded(true);
+//         }
+//       } catch (error) {
+//         console.error('Error fetching file:', error);
+//       }
+//     }
+//   };
 
-  fetchData();
+//   fetchData();
 
-  return () => {
-    isMounted = false;
-  };
-}, [fileId]);
+//   return () => {
+//     isMounted = false;
+//   };
+// }, [fileId]);
     
   const handleFilterRangeChange = (chartType, values) => {
     setFilterRanges(prev => ({ ...prev, [chartType]: values }));
