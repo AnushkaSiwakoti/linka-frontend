@@ -15,6 +15,7 @@ const Dashboards = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
+    setIsLoggedIn(localStorage.getItem('username') ? true : false);
     checkAuthAndFetchDashboards();
   }, []);
 
@@ -24,9 +25,9 @@ const Dashboards = () => {
       navigate('/login');
       return;
     }
-    setIsLoggedIn(true);
-    await fetchDashboards();
+    fetchDashboards();
   };
+  
 
   const fetchDashboards = async () => {
     try {
