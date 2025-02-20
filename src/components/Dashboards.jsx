@@ -1,4 +1,3 @@
-//recommit
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import './Dashboards.css';
@@ -15,7 +14,6 @@ const Dashboards = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    setIsLoggedIn(localStorage.getItem('username') ? true : false);
     checkAuthAndFetchDashboards();
   }, []);
 
@@ -25,9 +23,9 @@ const Dashboards = () => {
       navigate('/login');
       return;
     }
-    fetchDashboards();
+    setIsLoggedIn(true);
+    await fetchDashboards();
   };
-  
 
   const fetchDashboards = async () => {
     try {
