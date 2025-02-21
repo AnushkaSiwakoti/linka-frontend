@@ -99,7 +99,6 @@ const Build = () => {
   const [data, setData] = useState([]);
   const [dashboardName, setDashboardName] = useState('');
   const [fileId, setFileId] = useState(null);
-  const [svgContent, setSvgContent] = useState(null);
   const [fileType, setFileType] = useState(null); 
 
   // Layout state
@@ -138,11 +137,6 @@ const Build = () => {
     const sampleSize = Math.min(100, parsedData.length);
   
     headers.forEach(column => {
-      // Skip SVG content column for classification
-      if (column === 'content' && currentFileType === 'svg') {
-        categorical.push(column);
-        return;
-      }
   
       const samples = parsedData.slice(0, sampleSize).map(row => row[column]);
       const numberCount = samples.filter(val => !isNaN(parseFloat(val))).length;
@@ -173,7 +167,6 @@ const Build = () => {
       categoricalColumns: [],
       dateColumns: []
     });
-    setSvgContent(null);
     setFileUploaded(false);
     setFileType(null);
     localStorage.removeItem('lastUploadedFileUrl');
@@ -239,13 +232,11 @@ const Build = () => {
       case 'csv':
         return 'The CSV file appears to be invalid or empty.';
       case 'json':
-        return 'The JSON file must contain an array of objects with consistent structure.';
+        return 'There was an error processing the JSON file. Please ensure it contains valid data.';
       case 'xml':
-        return 'The XML file must contain data that can be converted to tabular format.';
+        return 'The XML file appears to be invalid or cannot be converted to tabular data.';
       case 'txt':
         return 'The text file must contain structured data with consistent delimiters.';
-      case 'svg':
-        return 'The SVG file appears to be invalid or corrupted.';
       default:
         return 'Invalid file format.';
     }
@@ -306,11 +297,12 @@ const Build = () => {
     }
   }, [updateComponentPositions]);
   
-
+ 
 
   const handleSaveDashboard = async () => {
     try {
       // Check that a dashboard name is provided
+      console.log("Dashboard name:", dashboardName);
       if (!dashboardName.trim()) {
         alert('Please enter a name for the dashboard before saving.');
         return;
@@ -363,7 +355,6 @@ const Build = () => {
       const contentLength = new Blob([jsonData]).size
       
       // Make API call to save the dashboard
-      // const csrfToken = getCSRFToken();
       const response = await fetch(`${process.env.REACT_APP_API_BASE_URL}/dashboards/save/`, {
         method: 'POST',
         headers: {
@@ -401,8 +392,6 @@ const apiBaseUrl = process.env.REACT_APP_API_BASE_URL.replace(/\/+$/, '');
 const acceptedFileTypes = {
   'text/csv': '.csv',
   'application/xml': '.xml',
-  'text/plain': '.txt',
-  'image/svg+xml': '.svg',
   'application/json': '.json'
 };
 
@@ -423,74 +412,6 @@ const handleFileChange = (e) => {
   setError(null);
 };
 
-
-// // Modified handleFileUpload function to handle Google Drive integration
-// const handleFileUpload = async () => {
-//   if (!selectedFile) {
-//     setError('Please select a file to upload.');
-//     return;
-//   }
-
-//   setLoading(true);
-//   setError(null);
-
-//   const formData = new FormData();
-//   formData.append('file', selectedFile);
-
-//   try {
-//     // Uses your existing API endpoint but now expects Google Drive URL in response
-//     const response = await fetch(`${apiBaseUrl}/file/upload/`, {
-//       method: 'POST',
-//       body: formData,
-//       credentials: 'include',
-//       headers: {
-//         'Authorization': `Bearer ${localStorage.getItem('authToken')}`
-//       }
-//     });
-
-//     if (!response.ok) {
-//       const errorData = await response.json();
-//       throw new Error(errorData.message || 'Upload failed.');
-//     }
-
-//     const result = await response.json();
-    
-//     if (result.status === 'success') {
-//       // Store the Google Drive URL for future fetching
-//       if (result.file_url) {
-//         // Save the file URL for later use
-//         setFileId(result.file_url);
-//       }
-
-//       // Process the CSV content as before
-//       if (result.csv_content) {
-//         const headers = result.csv_content[0];
-//         const rows = result.csv_content.slice(1);
-//         const parsedData = rows.map(row => {
-//           const obj = {};
-//           headers.forEach((header, index) => {
-//             obj[header] = row[index];
-//           });
-//           return obj;
-//         });
-
-//         setData(parsedData);
-//         setColumns(headers);
-//         setFileUploaded(true);
-//         classifyColumns(headers, parsedData);
-//       } else {
-//         throw new Error('Invalid CSV data received from server');
-//       }
-//     } else {
-//       throw new Error('Invalid response from server');
-//     }
-//   } catch (err) {
-//     setError(`Error uploading file: ${err.message}`);
-//   } finally {
-//     setLoading(false);
-//   }
-// };
-
 const handleFileUpload = async () => {
   if (!selectedFile) {
     setError('Please select a file to upload.');
@@ -503,15 +424,14 @@ const handleFileUpload = async () => {
   const formData = new FormData();
   formData.append('file', selectedFile);
   formData.append('fileType', fileType);
+  formData.append('username', localStorage.getItem('username'));
+
 
   try {
     const response = await fetch(`${apiBaseUrl}/file/upload/`, {
       method: 'POST',
       body: formData,
       credentials: 'include',
-      headers: {
-        'Authorization': `Bearer ${localStorage.getItem('authToken')}`
-      }
     });
 
     if (!response.ok) {
@@ -520,298 +440,28 @@ const handleFileUpload = async () => {
     }
 
     const result = await response.json();
-    
+    console.log('Upload response:', result);
+
     if (result.status === 'success') {
-      // Store the Google Drive URL if provided
       if (result.file_url) {
         setFileId(result.file_url);
         localStorage.setItem('lastUploadedFileUrl', result.file_url);
         localStorage.setItem('lastUploadedFileType', fileType);
-      }
-
-      // Process the file content based on type
-      const contentKey = `${fileType}_content`;
-      if (!result[contentKey]) {
-        throw new Error(`Invalid ${fileType} data received from server`);
-      }
-
-      const processedResults = processIncomingData(result[contentKey], fileType);
-      if (!processedResults) {
-        throw new Error(`Failed to process ${fileType} data`);
-      }
-
-      // Handle SVG content separately if needed
-      if (fileType === 'svg' && result.svg_content) {
-        setSvgContent(result.svg_content);
-      }
-
-      // Signal successful upload
-      if (onUploadSuccess) {
-        onUploadSuccess(result.file_url);
+        
+        await fetchFileData(result.file_url);
+      } else {
+        throw new Error('No file URL in upload response');
       }
     } else {
-      throw new Error('Invalid response from server');
+      throw new Error(result.message || 'Invalid response from server');
     }
   } catch (err) {
-    const errorMessage = getFileTypeError(fileType) || err.message;
-    setError(`Error uploading file: ${errorMessage}`);
-    if (onUploadError) {
-      onUploadError(err);
-    }
+    console.error('Upload error:', err);
+    setError(`Error uploading file: ${err.message}`);
   } finally {
     setLoading(false);
   }
 };
-
-
-const processIncomingData = useCallback((data, fileType) => {
-  try {
-    // Standardize and validate incoming data
-    if (!data) {
-      throw new Error('No data received for processing');
-    }
-
-    let processedData = [];
-    let processedColumns = [];
-
-    switch (fileType) {
-      case 'csv':
-        // Handle CSV data with special consideration for header extraction
-        if (Array.isArray(data)) {
-          const headers = data[0];
-          processedData = data.slice(1).map(row => {
-            const rowData = {};
-            headers.forEach((header, index) => {
-              // Clean header names and handle empty values
-              const cleanHeader = header.trim();
-              rowData[cleanHeader] = row[index] !== undefined ? row[index].trim() : '';
-            });
-            return rowData;
-          });
-          processedColumns = headers.map(header => header.trim());
-        } else {
-          throw new Error('Invalid CSV data format');
-        }
-        break;
-
-        case 'json':
-          let jsonData;
-          try {
-            // Parse if string, otherwise use as is
-            jsonData = typeof data === 'string' ? JSON.parse(data) : data;
-            
-            // Function to transform data into rows
-            const transformToRows = (data) => {
-              // If data is an object with arrays, expand arrays into multiple rows
-              if (typeof data === 'object' && !Array.isArray(data)) {
-                const rows = [];
-                
-                // Find the array properties
-                const arrayProps = Object.entries(data).filter(([_, value]) => Array.isArray(value));
-                
-                if (arrayProps.length > 0) {
-                  // Get the longest array length
-                  const maxLength = Math.max(...arrayProps.map(([_, arr]) => arr.length));
-                  
-                  // Create a row for each item in the arrays
-                  for (let i = 0; i < maxLength; i++) {
-                    const row = {};
-                    // Add non-array properties to each row
-                    Object.entries(data).forEach(([key, value]) => {
-                      if (!Array.isArray(value)) {
-                        row[key] = value;
-                      }
-                    });
-                    // Add array items at current index
-                    arrayProps.forEach(([key, arr]) => {
-                      const item = arr[i];
-                      if (typeof item === 'object' && item !== null) {
-                        // If array item is an object, flatten its properties
-                        Object.entries(item).forEach(([itemKey, itemValue]) => {
-                          row[`${itemKey}`] = itemValue;
-                        });
-                      } else {
-                        row[key] = item;
-                      }
-                    });
-                    rows.push(row);
-                  }
-                  return rows;
-                }
-              }
-              
-              // If data is already an array, process each item
-              if (Array.isArray(data)) {
-                return data.map(item => {
-                  if (typeof item === 'object' && item !== null) {
-                    const flatItem = {};
-                    Object.entries(item).forEach(([key, value]) => {
-                      if (typeof value === 'object' && value !== null) {
-                        Object.entries(value).forEach(([subKey, subValue]) => {
-                          flatItem[`${subKey}`] = subValue;
-                        });
-                      } else {
-                        flatItem[key] = value;
-                      }
-                    });
-                    return flatItem;
-                  }
-                  return item;
-                });
-              }
-              
-              return [data];
-            };
-        
-            // Transform the data
-            processedData = transformToRows(jsonData);
-        
-            // Get all unique columns
-            const allColumns = new Set();
-            processedData.forEach(row => {
-              Object.keys(row).forEach(key => allColumns.add(key));
-            });
-            processedColumns = Array.from(allColumns);
-        
-            // Ensure all rows have all columns
-            processedData = processedData.map(row => {
-              const standardizedRow = {};
-              processedColumns.forEach(col => {
-                standardizedRow[col] = row[col] ?? '';
-              });
-              return standardizedRow;
-            });
-        
-          } catch (error) {
-            console.error('JSON processing error:', error);
-            throw new Error(`Invalid JSON format: ${error.message}`);
-          }
-          break;
-          
-      case 'xml':
-        // Handle flattened XML data
-        processedData = Array.isArray(data) ? data : [data];
-        // Extract columns from all objects to handle varying structures
-        const allColumns = new Set();
-        processedData.forEach(item => {
-          Object.keys(item).forEach(key => allColumns.add(key));
-        });
-        processedColumns = Array.from(allColumns);
-        // Standardize all objects to have all columns
-        processedData = processedData.map(item => {
-          const standardizedItem = {};
-          processedColumns.forEach(col => {
-            standardizedItem[col] = item[col] !== undefined ? item[col] : '';
-          });
-          return standardizedItem;
-        });
-        break;
-
-      case 'txt':
-        // Handle text data with auto-detection of delimiter
-        if (typeof data === 'string') {
-          const lines = data.trim().split('\n');
-          const delimiter = lines[0].includes('\t') ? '\t' : ',';
-          const headers = lines[0].split(delimiter).map(h => h.trim());
-          processedData = lines.slice(1).map(line => {
-            const values = line.split(delimiter);
-            const rowData = {};
-            headers.forEach((header, index) => {
-              rowData[header] = values[index] ? values[index].trim() : '';
-            });
-            return rowData;
-          });
-          processedColumns = headers;
-        } else {
-          processedData = [{ content: String(data) }];
-          processedColumns = ['content'];
-        }
-        break;
-
-      case 'svg':
-        // Handle SVG with metadata
-        processedData = [{
-          filename: data.filename || 'untitled.svg',
-          filesize: data.filesize || 0,
-          lastModified: data.lastModified || new Date().toISOString(),
-          content: data.content || data
-        }];
-        processedColumns = ['filename', 'filesize', 'lastModified', 'content'];
-        break;
-
-      default:
-        throw new Error(`Unsupported file type: ${fileType}`);
-    }
-
-    // Update application state
-    setData(processedData);
-    setColumns(processedColumns);
-    setFileUploaded(true);
-
-    // Classify columns if we have valid data
-    if (processedColumns.length > 0 && processedData.length > 0) {
-      classifyColumns(processedColumns, processedData);
-    }
-
-    return { processedData, processedColumns };
-
-  } catch (error) {
-    console.error('Error processing data:', error);
-    setError(`Error processing ${fileType} data: ${error.message}`);
-    return null;
-  }
-}, [classifyColumns]);
-
-// // Modified fetchCSVData function to work with stored Google Drive URLs
-// const fetchCSVData = async (fileUrl) => {
-//   if (!fileUrl) return;
-
-//   setLoading(true);
-//   setError(null);
-
-//   try {
-//     const response = await fetch(`${apiBaseUrl}/file/fetch_csv/`, {
-//       method: 'POST',
-//       headers: {
-//         'Content-Type': 'application/json',
-//       },
-//       body: JSON.stringify({ file_url: fileUrl }),
-//       credentials: 'include',
-//     });
-
-//     if (!response.ok) {
-//       const errorData = await response.json();
-//       throw new Error(errorData.message || 'Failed to fetch CSV data.');
-//     }
-
-//     const result = await response.json();
-    
-//     if (result.status === 'success' && result.csv_content) {
-//       // Use Papa.parse as you were doing before
-//       Papa.parse(result.csv_content, {
-//         header: true,
-//         skipEmptyLines: true,
-//         complete: (parseResult) => {
-//           if (parseResult.data && parseResult.data.length > 0) {
-//             setData(parseResult.data);
-//             setColumns(Object.keys(parseResult.data[0]));
-//             setFileUploaded(true);
-//             classifyColumns(Object.keys(parseResult.data[0]), parseResult.data);
-//           } else {
-//             setError('No data found in the fetched CSV.');
-//           }
-//         },
-//         error: (parseError) => setError(`Error parsing CSV: ${parseError.message}`),
-//       });
-//     } else {
-//       throw new Error('Invalid CSV data received from server');
-//     }
-//   } catch (err) {
-//     setError(`Error fetching CSV data: ${err.message}`);
-//   } finally {
-//     setLoading(false);
-//   }
-// };
 
 const fetchFileData = async (fileUrl) => {
   if (!fileUrl) return;
@@ -825,30 +475,60 @@ const fetchFileData = async (fileUrl) => {
       throw new Error('File type not specified');
     }
 
-    const response = await fetch(`${apiBaseUrl}/file/fetch/`, {
+    const requestBody = { 
+      file_url: fileUrl,
+      file_type: fileExtension
+    };
+
+    console.log('Fetching file data:', requestBody);
+
+    const response = await fetch(`${apiBaseUrl}/file/fetch_files/`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${localStorage.getItem('authToken')}`
       },
-      body: JSON.stringify({ 
-        file_url: fileUrl,
-        file_type: fileExtension
-      }),
+      body: JSON.stringify(requestBody),
       credentials: 'include',
     });
 
     if (!response.ok) {
+      const errorText = await response.text();
+      console.error('Fetch error response:', errorText);
       throw new Error(`Failed to fetch file data: ${response.statusText}`);
     }
 
     const result = await response.json();
+    console.log('Fetch response:', result);
     
     if (result.status === 'success') {
-      // Process based on file type
-      await handleFileTypeResponse(result, fileExtension);
+      const contentKey = `${fileExtension}_content`;
+      const content = result[contentKey];
+
+      if (!content) {
+        throw new Error(`No ${fileExtension} content in response`);
+      }
+
+      // Use processIncomingData to handle all file types
+      const processedResults = processIncomingData(content, fileExtension);
+      if (!processedResults) {
+        throw new Error(`Failed to process ${fileExtension} data`);
+      }
+
+      setData(processedResults.processedData);
+      setColumns(processedResults.processedColumns);
+
+      if (processedResults.processedColumns.length > 0 && 
+          processedResults.processedData.length > 0) {
+        classifyColumns(
+          processedResults.processedColumns,
+          processedResults.processedData,
+          fileExtension
+        );
+      }
+
+      setFileUploaded(true);
     } else {
-      throw new Error(result.message || 'Invalid response from server');
+      throw new Error(result.message || 'Failed to fetch file data');
     }
   } catch (err) {
     console.error('Fetch error:', err);
@@ -859,151 +539,169 @@ const fetchFileData = async (fileUrl) => {
   }
 };
 
-// Helper functions for processing different file types
-const handleFileTypeResponse = async (result, fileExtension) => {
-  switch (fileExtension) {
-    case 'csv':
-      await handleCSVResponse(result);
-      break;
-    case 'json':
-      await handleJSONResponse(result);
-      break;
-    case 'xml':
-      await handleXMLResponse(result);
-      break;
-    case 'txt':
-      await handleTextResponse(result);
-      break;
-    case 'svg':
-      await handleSVGResponse(result);
-      break;
-    default:
-      throw new Error('Unsupported file type');
-  }
-};
-const handleCSVResponse = async (result) => {
-  if (!result.csv_content) {
-    throw new Error('Invalid CSV data received from server');
-  }
+const processIncomingData = useCallback((data, fileType) => {
+  try {
+    let processedData = [];
+    let processedColumns = [];
 
-  return new Promise((resolve, reject) => {
-    Papa.parse(result.csv_content, {
-      header: true,
-      skipEmptyLines: true,
-      complete: (parseResult) => {
-        if (parseResult.data && parseResult.data.length > 0) {
-          const data = parseResult.data;
-          const columns = Object.keys(data[0]);
-          
-          setData(data);
-          setColumns(columns);
-          classifyColumns(columns, data);
-          resolve();
+    switch (fileType) {
+      case 'csv': {
+        if (Array.isArray(data)) {
+          const headers = data[0].map(h => h.trim());
+          processedData = data.slice(1).map(row => {
+            const rowData = {};
+            headers.forEach((header, index) => {
+              rowData[header] = row[index] !== undefined ? row[index].trim() : '';
+            });
+            return rowData;
+          });
+          processedColumns = headers;
         } else {
-          reject(new Error('No data found in the CSV.'));
+          throw new Error('Invalid CSV format');
         }
-      },
-      error: (error) => reject(new Error(`Error parsing CSV: ${error.message}`))
-    });
-  });
-};
-
-const handleJSONResponse = async (result) => {
-  if (!result.json_content) {
-    throw new Error('Invalid JSON data received from server');
-  }
-
-  const jsonData = Array.isArray(result.json_content) 
-    ? result.json_content 
-    : [result.json_content];
-  
-  const columns = Object.keys(jsonData[0] || {});
-  
-  setData(jsonData);
-  setColumns(columns);
-  classifyColumns(columns, jsonData);
-};
-
-const handleXMLResponse = async (result) => {
-  if (!result.xml_content) {
-    throw new Error('Invalid XML data received from server');
-  }
-
-  const xmlData = Array.isArray(result.xml_content) 
-    ? result.xml_content 
-    : [result.xml_content];
-  
-  const columns = Object.keys(xmlData[0] || {});
-  
-  setData(xmlData);
-  setColumns(columns);
-  classifyColumns(columns, xmlData);
-};
-
-const handleTextResponse = async (result) => {
-  if (!result.text_content) {
-    throw new Error('Invalid text data received from server');
-  }
-
-  const lines = result.text_content.trim().split('\n');
-  const delimiter = lines[0].includes('\t') ? '\t' : ',';
-  
-  const headers = lines[0].split(delimiter).map(header => header.trim());
-  const parsedData = lines.slice(1).map(line => {
-    const values = line.split(delimiter);
-    const obj = {};
-    headers.forEach((header, index) => {
-      obj[header] = values[index] ? values[index].trim() : '';
-    });
-    return obj;
-  });
-
-  setData(parsedData);
-  setColumns(headers);
-  classifyColumns(headers, parsedData);
-};
-
-const handleSVGResponse = async (result) => {
-  if (!result.svg_content) {
-    throw new Error('Invalid SVG data received from server');
-  }
-
-  const svgData = [{
-    filename: result.filename || 'unknown.svg',
-    filesize: result.filesize || 0,
-    lastModified: result.lastModified || new Date().toISOString(),
-    content: result.svg_content
-  }];
-
-  const columns = ['filename', 'filesize', 'lastModified', 'content'];
-  
-  setData(svgData);
-  setColumns(columns);
-  classifyColumns(columns, svgData);
-};
-
-useEffect(() => {
-  let isMounted = true;
-  
-  const fetchData = async () => {
-    if (fileId && !fileUploaded) {
-      try {
-        await fetchFileData(fileId);
-        if (isMounted) {
-          setFileUploaded(true);
-        }
-      } catch (error) {
-        console.error('Error fetching file:', error);
+        break;
       }
+      case 'json': {
+        let jsonData = typeof data === 'string' ? JSON.parse(data) : data;
+        if (typeof jsonData === 'object' && !Array.isArray(jsonData)) {
+          if (Array.isArray(jsonData.data)) {
+            jsonData = jsonData.data;
+          } else {
+            const arrayKeys = Object.keys(jsonData).filter(
+              key => Array.isArray(jsonData[key]) && jsonData[key].length > 0 && typeof jsonData[key][0] === 'object'
+            );
+            jsonData = arrayKeys.length === 1 ? jsonData[arrayKeys[0]] : [jsonData];
+          }
+        }
+        if (!Array.isArray(jsonData)) {
+          jsonData = [jsonData];
+        }
+        const flattenObject = (obj, parentKey = '', sep = '_') =>
+          Object.keys(obj).reduce((acc, key) => {
+            const value = obj[key];
+            const newKey = parentKey ? `${parentKey}${sep}${key}` : key;
+            if (value && typeof value === 'object' && !Array.isArray(value)) {
+              Object.assign(acc, flattenObject(value, newKey, sep));
+            } else {
+              acc[newKey] = value;
+            }
+            return acc;
+          }, {});
+        processedData = jsonData.map(item =>
+          typeof item === 'object' && item !== null ? flattenObject(item) : item
+        );
+        const allColumns = new Set();
+        processedData.forEach(row => {
+          if (typeof row === 'object' && row !== null) {
+            Object.keys(row).forEach(key => allColumns.add(key));
+          }
+        });
+        processedColumns = Array.from(allColumns);
+        processedData = processedData.map(row => {
+          const standardized = {};
+          processedColumns.forEach(col => {
+            standardized[col] = row[col] !== undefined ? row[col] : '';
+          });
+          return standardized;
+        });
+        break;
+      }
+      case 'xml': {
+        // 1. Parse the XML string into a DOM structure
+        const parser = new DOMParser();
+        const xmlDoc = parser.parseFromString(data, 'application/xml');
+      
+        // Check for parsing errors
+        if (xmlDoc.getElementsByTagName('parsererror').length) {
+          throw new Error('Invalid XML data');
+        }
+      
+        // 2. Locate the root element  and its child nodes 
+        const root = xmlDoc.documentElement;
+        const items = Array.from(root.children); // each <x> becomes one row
+      
+        // 3. If no repeated child elements found, fall back to a single "content" field
+        if (!items.length) {
+          processedData = [{ content: data }];
+          processedColumns = ['content'];
+        } else {
+          // 4. build a row object by reading its child tags
+          processedData = items.map((item) => {
+            const row = {};
+            Array.from(item.children).forEach((child) => {
+              row[child.tagName] = child.textContent.trim();
+            });
+            return row;
+          });
+      
+          // 5. convert values to numeric
+          processedData = processedData.map((row) => {
+            Object.keys(row).forEach((key) => {
+              // Remove leading '$' (or other symbols) if present
+              const stripped = row[key].replace(/^\$/, '').trim();
+              // If it parses as a float, store it as a number
+              const maybeNum = parseFloat(stripped.replace(/[^\d.-]/g, ''));
+              if (!isNaN(maybeNum)) {
+                row[key] = maybeNum;
+              } else {
+                row[key] = row[key]; // Keep as text if it isn't numeric
+              }
+            });
+            return row;
+          });
+      
+          // 6. Gather all unique columns across the rows
+          const allColumns = new Set();
+          processedData.forEach((row) => {
+            Object.keys(row).forEach((col) => allColumns.add(col));
+          });
+          processedColumns = Array.from(allColumns);
+        }
+        break;
+      }      
+      default:
+        throw new Error(`Unsupported file type: ${fileType}`);
     }
-  };
 
-  fetchData();
+    setData(processedData);
+    setColumns(processedColumns);
+    setFileUploaded(true);
 
-  return () => {
-    isMounted = false;
-  };
-}, [fileId]);
+    if (processedColumns.length > 0 && processedData.length > 0) {
+      classifyColumns(processedColumns, processedData, fileType);
+    }
+
+    return { processedData, processedColumns };
+  } catch (error) {
+    console.error('Error processing data:', error);
+    setError(`Error processing ${fileType} data: ${error.message}`);
+    return null;
+  }
+}, [classifyColumns]);
+
+// having it be commented out just in case we need it later
+// useEffect(() => {
+//   let isMounted = true;
+  
+//   const fetchData = async () => {
+//     if (fileId && !fileUploaded) {
+//       try {
+//         await fetchFileData(fileId);
+//         if (isMounted) {
+//           setFileUploaded(true);
+//         }
+//       } catch (error) {
+//         console.error('Error fetching file:', error);
+//       }
+//     }
+//   };
+
+//   fetchData();
+
+//   return () => {
+//     isMounted = false;
+//   };
+// }, [fileId]);
     
   const handleFilterRangeChange = (chartType, values) => {
     setFilterRanges(prev => ({ ...prev, [chartType]: values }));
@@ -1891,7 +1589,7 @@ useEffect(() => {
   <div className="upload-container">
     <div className="upload-header">
       <h1>Upload Your Data</h1>
-      <p>Upload your data file (CSV, JSON, XML, TXT, or SVG) to create interactive visualizations and analyze your data</p>
+      <p>Upload your data file (CSV, JSON, XML, or TXT ) to create interactive visualizations and analyze your data</p>
     </div>
 
     <div className="upload-area">
