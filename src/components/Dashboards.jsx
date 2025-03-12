@@ -107,6 +107,7 @@ const Dashboards = () => {
           credentials: 'include',
           headers: {
             'Accept': 'application/json',
+            'X-Requested-With': 'XMLHttpRequest'
           }
         }
       );
