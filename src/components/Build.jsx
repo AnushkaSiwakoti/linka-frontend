@@ -349,7 +349,24 @@ const Build = () => {
       };
       // Log the prepared data
       console.log("Saving dashboard data:", JSON.stringify(dashboardData, null, 2));
-  
+      function getCsrfToken() {
+        // Try to get it from cookies
+        const cookies = document.cookie.split(';');
+        for (let cookie of cookies) {
+          const [name, value] = cookie.trim().split('=');
+          if (name === 'csrftoken') {
+            return value;
+          }
+        }
+        
+        // If not in cookies, try to get it from a meta tag (Django often places it there)
+        const metaTag = document.querySelector('meta[name="csrf-token"]');
+        if (metaTag) {
+          return metaTag.getAttribute('content');
+        }
+        
+        return '';
+      }
       // Convert to JSON and get content length
       const jsonData = JSON.stringify(dashboardData);
       const contentLength = new Blob([jsonData]).size
@@ -359,7 +376,7 @@ const Build = () => {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Content-Length': contentLength
+          'X-Requested-With': 'XMLHttpRequest',
         },
         credentials: 'include',
         body: jsonData
