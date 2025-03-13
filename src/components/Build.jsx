@@ -1,6 +1,7 @@
 import React, { useState, useCallback, useEffect, useRef } from 'react';
 import Papa from 'papaparse';
 import { Bar, Line } from 'react-chartjs-2';
+import { useLocation } from 'react-router-dom';
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -121,6 +122,69 @@ const Build = () => {
     columnFilters: {},
     activeFilters: []
   });
+
+  const location = useLocation();
+  const isEditing = location.state?.isEditing || false;
+
+  console.log("Build Component - Received Location State:", location.state);
+
+
+  const hasFetchedFile = useRef(false);
+
+useEffect(() => {
+    if (isEditing && location.state?.dashboardState && !hasFetchedFile.current) {
+        console.log("Editing existing dashboard:", location.state?.dashboardState);
+
+        const state = location.state.dashboardState;
+        setDashboardName(location.state.dashboardName || '');
+        setCharts(state.charts || []);
+        setShowTable(state.showTable || false);
+        setComponentOrder(state.componentOrder || []);
+        setComponentPositions(state.componentPositions || {});
+        setClassification(state.classification || {
+            numericalColumns: [],
+            categoricalColumns: [],
+            dateColumns: []
+        });
+        setData(state.data || []);
+        setColumns(state.columns || []);
+        setTableFilters(state.tableFilters || {
+            searchText: '',
+            sortColumn: null,
+            sortDirection: 'asc',
+            rowsPerPage: 10,
+            columnFilters: {},
+            activeFilters: []
+        });
+        setChartFilters(state.chartFilters || {});
+        setFilterRanges(state.filterRanges || {});
+        setChartOptions(state.chartOptions || {
+            showPercentageChange: false,
+            showYOYChange: false,
+            showMovingAverage: false,
+            showGrowthRate: false,
+            showCumulativeSum: false,
+            dateColumn: '',
+            movingAveragePeriod: 3
+        });
+        setFileType(state.fileType || null);
+        setFileId(state.fileId || null);
+
+        if (state.fileId) {
+            console.log("Fetching file:", state.fileId);
+            fetchFileData(state.fileId);
+            setFileUploaded(true);
+            hasFetchedFile.current = true; // Prevent future calls
+        }
+
+        // Force reprocessing of charts and tables after state update
+        setTimeout(() => {
+            setCharts(prevCharts => [...prevCharts]);
+        }, 100);
+    }
+}, [isEditing, location.state]);
+
+
 
   
   // Classification state
@@ -864,61 +928,126 @@ const processIncomingData = useCallback((data, fileType) => {
     
     let filteredData = { ...chart.data };
     
-    if (chart.type === 'pie') {
-      if (filters.categoryLimit) {
-        const limit = parseInt(filters.categoryLimit);
-        filteredData.labels = chart.data.labels.slice(0, limit);
-        filteredData.datasets = [{
-          ...chart.data.datasets[0],
-          data: chart.data.datasets[0].data.slice(0, limit)
-        }];
-      }
+    // if (chart.type === 'pie') {
+    //   if (filters.categoryLimit) {
+    //     const limit = parseInt(filters.categoryLimit);
+    //     filteredData.labels = chart.data.labels.slice(0, limit);
+    //     filteredData.datasets = [{
+    //       ...chart.data.datasets[0],
+    //       data: chart.data.datasets[0].data.slice(0, limit)
+    //     }];
+    //   }
 
-      if (filters.metric === 'percentage') {
-        const total = chart.data.datasets[0].data.reduce((sum, val) => sum + val, 0);
-        filteredData.datasets[0].data = chart.data.datasets[0].data.map(val => 
-          ((val / total) * 100).toFixed(1)
-        );
-      }
-    } else {
-      if (filters.dataPoints) {
-        const points = Math.min(filters.dataPoints, chart.data.labels.length);
-        filteredData.labels = chart.data.labels.slice(0, points);
-        filteredData.datasets = chart.data.datasets.map(dataset => ({
-          ...dataset,
-          data: dataset.data.slice(0, points)
-        }));
-      }
+    //   if (filters.metric === 'percentage') {
+    //     const total = chart.data.datasets[0].data.reduce((sum, val) => sum + val, 0);
+    //     filteredData.datasets[0].data = chart.data.datasets[0].data.map(val => 
+    //       ((val / total) * 100).toFixed(1)
+    //     );
+    //   }
+    // } else {
+    //   if (filters.dataPoints) {
+    //     const points = Math.min(filters.dataPoints, chart.data.labels.length);
+    //     filteredData.labels = chart.data.labels.slice(0, points);
+    //     filteredData.datasets = chart.data.datasets.map(dataset => ({
+    //       ...dataset,
+    //       data: dataset.data.slice(0, points)
+    //     }));
+    //   }
 
-      if (filters.minValue || filters.maxValue) {
-        const min = filters.minValue ? parseFloat(filters.minValue) : -Infinity;
-        const max = filters.maxValue ? parseFloat(filters.maxValue) : Infinity;
+    //   if (filters.minValue || filters.maxValue) {
+    //     const min = filters.minValue ? parseFloat(filters.minValue) : -Infinity;
+    //     const max = filters.maxValue ? parseFloat(filters.maxValue) : Infinity;
         
-        const validIndices = chart.data.datasets[0].data
-          .map((val, idx) => ({ val, idx }))
-          .filter(({ val }) => val >= min && val <= max)
-          .map(({ idx }) => idx);
+    //     const validIndices = chart.data.datasets[0].data
+    //       .map((val, idx) => ({ val, idx }))
+    //       .filter(({ val }) => val >= min && val <= max)
+    //       .map(({ idx }) => idx);
 
-        filteredData.labels = validIndices.map(i => chart.data.labels[i]);
-        filteredData.datasets = chart.data.datasets.map(dataset => ({
-          ...dataset,
-          data: validIndices.map(i => dataset.data[i])
-        }));
+    //     filteredData.labels = validIndices.map(i => chart.data.labels[i]);
+    //     filteredData.datasets = chart.data.datasets.map(dataset => ({
+    //       ...dataset,
+    //       data: validIndices.map(i => dataset.data[i])
+    //     }));
+    //   }
+
+    //   if (filters.sortOrder && filters.sortOrder !== 'original') {
+    //     const indices = [...Array(filteredData.datasets[0].data.length).keys()];
+    //     indices.sort((a, b) => {
+    //       const valA = filteredData.datasets[0].data[a];
+    //       const valB = filteredData.datasets[0].data[b];
+    //       return filters.sortOrder === 'ascending' ? valA - valB : valB - valA;
+    //     });
+
+    //     filteredData.labels = indices.map(i => filteredData.labels[i]);
+    //     filteredData.datasets = filteredData.datasets.map(dataset => ({
+    //       ...dataset,
+    //       data: indices.map(i => dataset.data[i])
+    //     }));
+
+    if (chart.type === 'pie') {
+      // Apply category limit only if it exists
+      if (filters.categoryLimit !== undefined) {
+          const limit = parseInt(filters.categoryLimit, 10);
+          if (!isNaN(limit) && limit > 0) {
+              filteredData.labels = filteredData.labels.slice(0, limit);
+              filteredData.datasets = filteredData.datasets.map(dataset => ({
+                  ...dataset,
+                  data: dataset.data.slice(0, limit)
+              }));
+          }
       }
 
-      if (filters.sortOrder && filters.sortOrder !== 'original') {
-        const indices = [...Array(filteredData.datasets[0].data.length).keys()];
-        indices.sort((a, b) => {
-          const valA = filteredData.datasets[0].data[a];
-          const valB = filteredData.datasets[0].data[b];
-          return filters.sortOrder === 'ascending' ? valA - valB : valB - valA;
-        });
+      // Apply percentage metric only if explicitly requested
+      if (filters.metric === 'percentage') {
+          const total = filteredData.datasets[0].data.reduce((sum, val) => sum + val, 0);
+          if (total > 0) {
+              filteredData.datasets[0].data = filteredData.datasets[0].data.map(val =>
+                  ((val / total) * 100).toFixed(1)
+              );
+          }
+      }
+  } else {
+      // Step 1: Apply minValue and maxValue filtering first
+      if (filters.minValue !== undefined || filters.maxValue !== undefined) {
+          const min = filters.minValue !== undefined ? parseFloat(filters.minValue) : -Infinity;
+          const max = filters.maxValue !== undefined ? parseFloat(filters.maxValue) : Infinity;
 
-        filteredData.labels = indices.map(i => filteredData.labels[i]);
-        filteredData.datasets = filteredData.datasets.map(dataset => ({
-          ...dataset,
-          data: indices.map(i => dataset.data[i])
-        }));
+          const validIndices = filteredData.datasets[0].data
+              .map((val, idx) => ({ val, idx }))
+              .filter(({ val }) => val >= min && val <= max)
+              .map(({ idx }) => idx);
+
+          filteredData.labels = validIndices.map(i => filteredData.labels[i]);
+          filteredData.datasets = filteredData.datasets.map(dataset => ({
+              ...dataset,
+              data: validIndices.map(i => dataset.data[i])
+          }));
+      }
+
+      // Step 2: Apply dataPoints limit
+      if (filters.dataPoints !== undefined) {
+          const points = Math.min(filters.dataPoints, filteredData.labels.length);
+          filteredData.labels = filteredData.labels.slice(0, points);
+          filteredData.datasets = filteredData.datasets.map(dataset => ({
+              ...dataset,
+              data: dataset.data.slice(0, points)
+          }));
+      }
+
+      // Step 3: Apply sorting **last**
+      if (filters.sortOrder && filters.sortOrder !== 'original') {
+          const indices = [...Array(filteredData.datasets[0].data.length).keys()];
+          indices.sort((a, b) => {
+              const valA = filteredData.datasets[0].data[a];
+              const valB = filteredData.datasets[0].data[b];
+              return filters.sortOrder === 'ascending' ? valA - valB : valB - valA;
+          });
+
+          filteredData.labels = indices.map(i => filteredData.labels[i]);
+          filteredData.datasets = filteredData.datasets.map(dataset => ({
+              ...dataset,
+              data: indices.map(i => dataset.data[i])
+          }));
       }
     }
     
@@ -1521,26 +1650,27 @@ const processIncomingData = useCallback((data, fileType) => {
                 />
               )}
               <div className="chart-wrapper" style={{ height: '100%' }}>
-              {chart.type === 'pie' ? (
-              <div className="chart-wrapper" style={{ height: '100%', minHeight: 0 }}>
-                <PieChartContent 
-                  data={processFilteredData(chart.data, chartFilters[chart.id])}
-                  metrics={chart.metrics} 
-                  options={chart.options}
-                />
-              </div>
-            ) : chart.type === 'bar' ? (
+                {chart.type === 'pie' ? (
+                  <div className="chart-wrapper" style={{ height: '100%', minHeight: 0 }}>
+                    <PieChartContent 
+                      data={getFilteredChartData(chart, chartFilters[chart.id])} 
+                      metrics={chart.metrics} 
+                      options={chart.options}
+                    />
+                  </div>
+                ) : chart.type === 'bar' ? (
                   <Bar 
-                    data={processFilteredData(chart.data, chartFilters[chart.id])} 
+                    data={getFilteredChartData(chart, chartFilters[chart.id])} 
                     options={chart.options} 
                   />
                 ) : (
                   <Line 
-                    data={processFilteredData(chart.data, chartFilters[chart.id])} 
+                    data={getFilteredChartData(chart, chartFilters[chart.id])} 
                     options={chart.options} 
                   />
                 )}
               </div>
+
               {chart.type !== 'pie' && (
                 <div className="filter-controls">
                   <div className="filter-label">Filter Data Range:</div>
@@ -1565,6 +1695,7 @@ const processIncomingData = useCallback((data, fileType) => {
               )}
             </>
           )}
+
         </div>
       </DraggableComponent>
     );
