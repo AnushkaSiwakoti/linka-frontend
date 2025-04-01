@@ -12,6 +12,7 @@ const Dashboards = () => {
   const [deleteInProgress, setDeleteInProgress] = useState(null);
   const [isConfirmingDelete, setIsConfirmingDelete] = useState(null);
   const navigate = useNavigate();
+  const [openDropdownId, setOpenDropdownId] = useState(null);
 
   useEffect(() => {
     checkAuthAndFetchDashboards();
@@ -139,6 +140,38 @@ const Dashboards = () => {
     }
   };
 
+  const downloadZip = async (dashboardId) => {
+    try {
+      const response = await fetch(
+        `${process.env.REACT_APP_API_BASE_URL}/dashboards/download_zip/`,
+        {
+          method: 'POST',
+          credentials: 'include',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ dashboard_id: dashboardId }),
+        }
+      );
+  
+      if (!response.ok) {
+        throw new Error('Failed to download zip');
+      }
+  
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `dashboard_${dashboardId}.zip`;
+      a.click();
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('Error downloading zip:', error);
+      setError('Failed to download dashboard zip. Please try again.');
+    }
+  };
+  
+
   const deleteDashboard = async (dashboardId) => {
     try {
       setDeleteInProgress(dashboardId);
@@ -209,13 +242,44 @@ const Dashboards = () => {
           {loading ? 'Opening...' : 'Edit Dashboard'}
         </button>
 
+        <div className="relative inline-block text-left">
+  <button
+    type="button"
+    className="deploy inline-flex justify-center w-full rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50"
+    onClick={() => setOpenDropdownId(openDropdownId === dashboard.id ? null : dashboard.id)}
+  >
+    Deployment Options
+  </button>
+
+  {openDropdownId === dashboard.id && (
+    <div className="origin-top-right absolute right-0 mt-2 w-40 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 focus:outline-none z-20">
+      <div className="py-1" role="none">
         <button
-          className="deploy"
-          onClick={() => deployDashboard(dashboard.id)}
+          className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 w-full text-left"
+          onClick={() => {
+            deployDashboard(dashboard.id);
+            setOpenDropdownId(null);
+          }}
           disabled={loading || deleteInProgress === dashboard.id}
         >
           {deleteInProgress === dashboard.id ? 'Deploying...' : 'Deploy'}
         </button>
+        <button
+          className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 w-full text-left"
+          onClick={() => {
+            downloadZip(dashboard.id);
+            setOpenDropdownId(null);
+          }}
+          disabled={loading}
+        >
+          Download Zip
+        </button>
+      </div>
+    </div>
+  )}
+</div>
+
+
         
         {isConfirmingDelete === dashboard.id ? (
           <div className="delete-confirmation">

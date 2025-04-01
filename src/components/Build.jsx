@@ -1737,7 +1737,7 @@ const processIncomingData = useCallback((data, fileType) => {
   <div className="upload-container">
     <div className="upload-header">
       <h1>Upload Your Data</h1>
-      <p>Upload your data file (CSV, JSON, XML, or TXT ) to create interactive visualizations and analyze your data</p>
+      <p>Upload your data file (CSV, JSON, or XML) to create interactive visualizations and analyze your data</p>
     </div>
 
     <div className="upload-area">
