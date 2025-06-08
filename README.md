@@ -1,70 +1,97 @@
-# Getting Started with Create React App
+🔗 Linka – Interactive Dashboards, Zero Coding
+Linka is a full-stack data visualization platform that lets users turn raw data into interactive, customizable dashboards — with zero programming required.
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+Whether you're a developer, data analyst, project manager, or educator, Linka simplifies the entire workflow: upload → design → deploy.
 
-## Available Scripts
+🌟 Features
+Drag-and-Drop Dashboard Builder
+Intuitive UI to arrange charts, tables, and filters without writing a line of code.
 
-In the project directory, you can run:
+Supports Multiple File Formats
+Upload .csv, .json, or .xml data files for instant visualization.
 
-### `npm start`
+Real-Time Filtering
+Apply advanced filters (range, text, category, date) that reflect changes live on dashboards.
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
+Pre-Built & Blank Templates
+Start from scratch or choose from curated templates to get up and running quickly.
 
-The page will reload when you make changes.\
-You may also see any lint errors in the console.
+Secure Google Drive Integration
+User files are stored safely on their own Google Drive, while Linka keeps only essential metadata.
 
-### `npm test`
+Deployment Options
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+Instantly deploy dashboards as a live hosted URL
 
-### `npm run build`
+Or download a complete .zip package with everything needed to self-host
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+Version Control
+Save multiple versions of your dashboard to experiment without losing work.
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+🧠 Why Linka?
+Most visualization tools are powerful, and painfully overcomplicated. Linka bridges the gap between design and deployment, letting users build dashboards in one place without switching tools, learning complex software, or worrying about file security.
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+Compared to Tableau or Miro, Linka focuses on usability, privacy, and developer-friendly deployment.
 
-### `npm run eject`
+🛠 Tech Stack
+Frontend: React.js
 
-**Note: this is a one-way operation. Once you `eject`, you can't go back!**
+Backend: Django REST Framework
 
-If you aren't satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+Database: MySQL
 
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you're on your own.
+Cloud Integration: Google Drive API
 
-You don't have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn't feel obligated to use this feature. However we understand that this tool wouldn't be useful if you couldn't customize it when you are ready for it.
+DevOps: Docker
 
-## Learn More
+Others: GitHub, Git LFS, JSON-based dashboard state
 
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
+📦 Deliverables
+Each dashboard can be:
 
-To learn React, check out the [React documentation](https://reactjs.org/).
+Deployed as a live page hosted by Linka (shareable URL)
 
-### Code Splitting
+Downloaded as a .zip with:
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/code-splitting](https://facebook.github.io/create-react-app/docs/code-splitting)
+index.html (the full dashboard UI)
 
-### Analyzing the Bundle Size
+dashboard.json (state file for loading/saving)
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size](https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size)
+No vendor lock-in, no surprises.
 
-### Making a Progressive Web App
+🧪 Testing & Optimization
+Manually tested all file uploads, filter operations, and cross-browser compatibility
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app](https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app)
+Stress-tested dashboards with 10,000+ rows
 
-### Advanced Configuration
+Ensured fast re-rendering and responsive UI even with large datasets
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/advanced-configuration](https://facebook.github.io/create-react-app/docs/advanced-configuration)
+Backend token-based authentication and secure API interactions
 
-### Deployment
+📈 Typical User Flow
+Sign up / Log in
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/deployment](https://facebook.github.io/create-react-app/docs/deployment)
+Upload a data file
 
-### `npm run build` fails to minify
+Choose a template or start blank
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
+Drag in charts, tables, and filters
+
+Customize layout, apply filters
+
+Save and deploy — done!
+
+📚 Future Roadmap
+Real-time data sync with databases
+
+Collaborative dashboards (multi-user editing)
+
+Ready-to-fill templates with editable UIs
+
+Dark mode and advanced theming
+
+Enhanced metrics and filtering (moving averages, conditional formatting)
+
+👩🏽‍💻 Built With Love By
+Anghelina Opinca & Anushka Siwakoti
+Computer Science students with a passion for seamless UX and data storytelling.
